@@ -1,0 +1,15 @@
+name: Buscript
+main: buscript.BuscriptPlugin
+version: maven-version-number
+author: dumptruckman
+softdepend: [Vault]
+
+commands:
+  excs:
+    description: reloads script file and config
+    usage: /<command> <script> [player]
+    permission: buscript.excs
+
+permissions:
+  buscript.excs:
+    default: OP
