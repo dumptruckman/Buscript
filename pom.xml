@@ -5,7 +5,13 @@
     <artifactId>buscript</artifactId>
     <version>1.0-SNAPSHOT</version>
     <name>Buscript</name>
-    <description>Bukkit plugin/library that allows extensible scripts (written in FScript) to be run</description>
+    <description>Bukkit plugin/library that allows extensible javascript scripts to be run</description>
+    <licenses>
+        <license>
+            <name>Mozilla Public License 2.0</name>
+            <url>http://www.mozilla.org/MPL/2.0/</url>
+        </license>
+    </licenses>
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <project.build.number>UNKNOWN</project.build.number>
