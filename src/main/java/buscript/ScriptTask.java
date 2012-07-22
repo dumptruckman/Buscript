@@ -34,7 +34,7 @@ class ScriptTask implements Runnable {
                 final Map<String, Object> script = scriptsIt.next();
                 if (script.get("time") != null) {
                     try {
-                        long scriptTime = Long.valueOf(script.get("time").toString());
+                        long scriptTime = (Long) script.get("time");
                         if (time >= scriptTime) {
                             if (script.get("file") != null) {
                                 final File scriptFile = new File(script.get("file").toString());

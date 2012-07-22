@@ -1,23 +1,27 @@
 package buscript;
 
-import buscript.util.fscript.FSException;
-import buscript.util.fscript.FScript;
 import net.milkbowl.vault.permission.Permission;
 import org.bukkit.Bukkit;
 import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.configuration.file.YamlConfiguration;
+import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.server.PluginDisableEvent;
 import org.bukkit.event.server.PluginEnableEvent;
 import org.bukkit.plugin.Plugin;
 import org.bukkit.plugin.RegisteredServiceProvider;
+import org.mozilla.javascript.Context;
+import org.mozilla.javascript.FunctionObject;
+import org.mozilla.javascript.Scriptable;
+import org.mozilla.javascript.ScriptableObject;
 
 import java.io.File;
 import java.io.FileReader;
 import java.io.IOException;
 import java.io.Reader;
+import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -26,10 +30,12 @@ import java.util.Map;
 public class Buscript implements Listener {
 
     public static final String NULL = "!!NULL";
-    static String target = null;
+
+    String target = null;
+
+    Scriptable global;
 
     Plugin plugin;
-    ScriptHandler scriptHandler;
     Permission permissions;
     boolean runTasks;
     File scriptFolder;
@@ -44,8 +50,14 @@ public class Buscript implements Listener {
         if (!getScriptFolder().exists()) {
             getScriptFolder().mkdirs();
         }
+        Context cx = Context.enter();
+        try {
+            global = cx.initStandardObjects();
+        } finally {
+            Context.exit();
+        }
+        addScriptMethods(new DefaultFunctions(this));
         setupPermissions();
-        scriptHandler = new ScriptHandler(this);
         scriptFile = new File(getScriptFolder(), "scripts.bin");
         scriptConfig = YamlConfiguration.loadConfiguration(scriptFile);
         ConfigurationSection scripts = scriptConfig.getConfigurationSection("scripts");
@@ -58,7 +70,16 @@ public class Buscript implements Listener {
                         Map scriptMap = (Map) scriptObj;
                         Map<String, Object> script = new HashMap<String, Object>(2);
                         for (Object keyObj : scriptMap.keySet()) {
-                            script.put(keyObj.toString(), scriptMap.get(keyObj));
+                            if (keyObj.toString().equals("time")) {
+                                try {
+                                    script.put(keyObj.toString(), Long.valueOf(scriptMap.get(keyObj).toString()));
+                                } catch (NumberFormatException e) {
+                                    plugin.getLogger().warning("Script data error, time reset");
+                                    script.put(keyObj.toString(), 0);
+                                }
+                            } else {
+                                script.put(keyObj.toString(), scriptMap.get(keyObj));
+                            }
                         }
                         playerScripts.add(script);
                     }
@@ -68,6 +89,39 @@ public class Buscript implements Listener {
         runTasks = true;
         Bukkit.getScheduler().scheduleSyncDelayedTask(plugin, new ScriptTask(this), 20L);
         Bukkit.getPluginManager().registerEvents(this, plugin);
+    }
+
+    public String replaceName(String string) {
+        if (string == null) {
+            throw new IllegalArgumentException("string must not be null");
+        }
+        String target = this.target;
+        if (target == null) {
+            target = Buscript.NULL;
+        }
+        return string.replaceAll("%t", target);
+    }
+
+    public void addScriptMethod(String name, Method method, Scriptable obj) {
+        FunctionObject scriptMethod = new FunctionObject(name,
+                method, obj);
+        global.put(name, global, scriptMethod);
+    }
+
+    public void addScriptMethods(String[] names, Scriptable obj) {
+        for (Method method : obj.getClass().getDeclaredMethods()) {
+            for (String name : names) {
+                if (method.getName().equals(name)) {
+                    addScriptMethod(name, method, obj);
+                }
+            }
+        }
+    }
+
+    public void addScriptMethods(Scriptable obj) {
+        for (Method method : obj.getClass().getDeclaredMethods()) {
+            addScriptMethod(method.getName(), method, obj);
+        }
     }
 
     @EventHandler
@@ -109,35 +163,36 @@ public class Buscript implements Listener {
         return scriptFolder;
     }
 
-    public FScript getFScript() {
-        FScript fScript = new FScript();
-        fScript.registerExtension(scriptHandler);
-        return fScript;
-    }
-
     public void executeScript(File scriptFile) {
-        executeScript(scriptFile, null);
+        executeScript(scriptFile, null, null);
     }
 
-    public void executeScript(File scriptFile, String player) {
-        target = player;
-        runScript(scriptFile);
+    public void executeScript(File scriptFile, Player exectuor) {
+        executeScript(scriptFile, null, exectuor);
+    }
+
+    public void executeScript(File scriptFile, String target) {
+        executeScript(scriptFile, target, null);
+    }
+
+    public void executeScript(File scriptFile, String target, Player exectuor) {
+        this.target = target;
+        runScript(scriptFile, exectuor, target == null ? NULL : target);
     }
 
     public void scheduleScript(File scriptFile, long delay) {
-        scheduleScript(scriptFile, delay, null);
+        scheduleScript(scriptFile, null, delay);
     }
 
-    public void scheduleScript(File scriptFile, long delay, String player) {
-        if (player == null) {
-            player = NULL;
+    public void scheduleScript(File scriptFile, String target, long delay) {
+        if (target == null) {
+            target = NULL;
         }
-        List<Map<String, Object>> playerScripts = delayedScripts.get(player);
+        List<Map<String, Object>> playerScripts = delayedScripts.get(target);
         if (playerScripts == null) {
             playerScripts = new ArrayList<Map<String, Object>>();
-            delayedScripts.put(player, playerScripts);
+            delayedScripts.put(target, playerScripts);
         }
-
         Map<String, Object> script = new HashMap<String, Object>(2);
         script.put("time", System.currentTimeMillis() + delay);
         script.put("file", scriptFile.toString());
@@ -145,27 +200,30 @@ public class Buscript implements Listener {
         saveData();
     }
 
-    public ScriptHandler getScriptHandler() {
-        return scriptHandler;
-    }
+    private void runScript(File script, Player executor, String target) {
+        Context cx = Context.enter();
+        try {
+            global.put("server", global, Bukkit.getServer());
+            global.put("target", global, target);
+            Reader reader = null;
+            try{
+                reader = new FileReader(script);
+                cx.evaluateReader(global, reader, script.toString(), 1, null);
+            } catch (Exception e) {
+                plugin.getLogger().warning("Error running script: " + e.getMessage());
+                if (executor != null) {
+                    executor.sendMessage("Error running script: " + e.getMessage());
+                }
+            } finally {
+                if (reader != null) {
+                    try {
+                        reader.close();
+                    } catch (IOException ignore) { }
+                }
 
-    private void runScript(File script) {
-        Reader reader = null;
-        FScript fScript = getFScript();
-        try{
-            reader = new FileReader(script);
-            fScript.load(reader);
-            fScript.run();
-        } catch (IOException e){
-            plugin.getLogger().warning("Read error: " + e.getMessage());
-        } catch (FSException e) {
-            plugin.getLogger().warning("Error parsing script: " + e.getMessage());
-        } finally {
-            if (reader != null) {
-                try {
-                    reader.close();
-                } catch (IOException ignore) { }
             }
+        } finally {
+            Context.exit();
         }
     }
 }

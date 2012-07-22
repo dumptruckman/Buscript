@@ -5,11 +5,11 @@ author: dumptruckman
 softdepend: [Vault]
 
 commands:
-  excs:
+  run:
     description: reloads script file and config
     usage: /<command> <script> [player]
-    permission: buscript.excs
+    permission: buscript.run
 
 permissions:
-  buscript.excs:
+  buscript.run:
     default: OP
