@@ -1,6 +1,7 @@
 package buscript;
 
 import buscript.util.TimeTools;
+import net.milkbowl.vault.economy.EconomyResponse;
 import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
 import org.mozilla.javascript.ScriptableObject;
@@ -51,11 +52,51 @@ class DefaultFunctions extends ScriptableObject {
         return player != null && player.hasPermission(permission);
     }
 
-    public boolean hasPermOffline(String world, String name, String permission) {
+    public boolean hasPermOffline(String world, String player, String permission) {
         if (buscript.getPermissions() != null) {
-            return buscript.getPermissions().has(world, buscript.replaceName(name), permission);
+            return buscript.getPermissions().has(world, buscript.replaceName(player), permission);
         } else {
-            throw new IllegalStateException("Vault must be installed to use hasperm(world, player, perm)!");
+            throw new IllegalStateException("Vault must be installed to use hasPermOffline(world, player, perm)!");
+        }
+    }
+
+    public void addPerm(String world, String player, String permission) {
+        if (buscript.getPermissions() != null) {
+            buscript.getPermissions().playerAdd(world, buscript.replaceName(player), permission);
+        } else {
+            throw new IllegalStateException("Vault must be installed to use addPerm(world, player, perm)!");
+        }
+    }
+
+    public void removePerm(String world, String player, String permission) {
+        if (buscript.getPermissions() != null) {
+            buscript.getPermissions().playerRemove(world, buscript.replaceName(player), permission);
+        } else {
+            throw new IllegalStateException("Vault must be installed to use removePerm(world, player, perm)!");
+        }
+    }
+
+    public boolean hasMoney(String player, Double money) {
+        if (buscript.getEconomy() != null) {
+            return buscript.getEconomy().has(player, money);
+        } else {
+            throw new IllegalStateException("Vault must be installed to use hasMoney(player, money)!");
+        }
+    }
+
+    public boolean addMoney(String player, Double money) {
+        if (buscript.getEconomy() != null) {
+            return buscript.getEconomy().depositPlayer(player, money).transactionSuccess();
+        } else {
+            throw new IllegalStateException("Vault must be installed to use addMoney(player, money)!");
+        }
+    }
+
+    public boolean removeMoney(String player, Double money) {
+        if (buscript.getEconomy() != null) {
+            return buscript.getEconomy().withdrawPlayer(player, money).transactionSuccess();
+        } else {
+            throw new IllegalStateException("Vault must be installed to use removeMoney(player, money)!");
         }
     }
 
