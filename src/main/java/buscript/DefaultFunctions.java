@@ -9,7 +9,7 @@ import java.io.File;
 
 class DefaultFunctions extends ScriptableObject {
 
-    Buscript buscript;
+    private Buscript buscript;
 
     DefaultFunctions(Buscript buscript) {
         this.buscript = buscript;
@@ -52,8 +52,8 @@ class DefaultFunctions extends ScriptableObject {
     }
 
     public boolean hasPermOffline(String world, String name, String permission) {
-        if (buscript.permissions != null) {
-            return buscript.permissions.has(world, buscript.replaceName(name), permission);
+        if (buscript.getPermissions() != null) {
+            return buscript.getPermissions().has(world, buscript.replaceName(name), permission);
         } else {
             throw new IllegalStateException("Vault must be installed to use hasperm(world, player, perm)!");
         }

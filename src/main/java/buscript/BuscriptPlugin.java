@@ -7,15 +7,23 @@ import org.bukkit.plugin.java.JavaPlugin;
 
 import java.io.File;
 
+/**
+ * The main Plugin class which allows this script library to be run as a plugin and gives access to the command "run".
+ */
 public class BuscriptPlugin extends JavaPlugin {
 
-    Buscript buscript;
+    private Buscript buscript;
 
     @Override
     public void onEnable() {
         buscript = new Buscript(this);
     }
 
+    /**
+     * Retrieves the primary API for this plugin.  The object this returns is where all of the good stuff happens.
+     *
+     * @return The buscript library API.
+     */
     public Buscript getAPI() {
         return buscript;
     }

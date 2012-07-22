@@ -11,11 +11,11 @@ import java.util.Map;
 
 class ScriptTask implements Runnable {
 
-    Buscript buscript;
-    Plugin plugin;
+    private Buscript buscript;
+    private Plugin plugin;
 
     ScriptTask(Buscript buscript) {
-        this.plugin = buscript.plugin;
+        this.plugin = buscript.getPlugin();
         this.buscript = buscript;
     }
 
