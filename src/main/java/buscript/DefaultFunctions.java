@@ -36,7 +36,7 @@ class DefaultFunctions extends ScriptableObject {
         Bukkit.dispatchCommand(Bukkit.getConsoleSender(), buscript.replaceName(command));
     }
 
-    public void commandFake(String name, String command) {
+    public void commandSpoof(String name, String command) {
         Player player = Bukkit.getPlayerExact(buscript.replaceName(name));
         if (player != null) {
             Bukkit.dispatchCommand(player, buscript.replaceName(command));
