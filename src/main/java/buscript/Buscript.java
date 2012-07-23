@@ -67,6 +67,7 @@ public class Buscript {
             global = cx.initStandardObjects();
             // Adds the current server instance as a script variable "server".
             global.put("server", global, Bukkit.getServer());
+            global.put("plugin", global, plugin);
         } finally {
             Context.exit();
         }
