@@ -14,7 +14,7 @@ public class TimeTools {
         hour = hour % 24;
         StringBuilder time = new StringBuilder();
         if (day != 0) {
-            time.append(hour).append("h ");
+            time.append(hour).append("d ");
         }
         if (hour != 0) {
             time.append(hour).append("h ");
@@ -86,7 +86,7 @@ public class TimeTools {
         }
         if (dhms.contains("h")) {
             try {
-                hours = Integer.parseInt(dhms.split("d")[0].replaceAll(" ", ""));
+                hours = Integer.parseInt(dhms.split("h")[0].replaceAll(" ", ""));
             } catch (NumberFormatException ignore) { }
             if (dhms.contains("m") || dhms.contains("s")) {
                 dhms = dhms.split("h")[1];
@@ -106,6 +106,10 @@ public class TimeTools {
             } catch (NumberFormatException ignore) { }
         }
         return (days * 86400) + (hours * 3600) + (minutes * 60) + seconds;
+    }
+
+    public static long fromTimestampString(String timestamp) {
+
     }
 
     public static long fromLongForm(String dhms) {
