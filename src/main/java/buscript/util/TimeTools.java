@@ -108,10 +108,6 @@ public class TimeTools {
         return (days * 86400) + (hours * 3600) + (minutes * 60) + seconds;
     }
 
-    public static long fromTimestampString(String timestamp) {
-
-    }
-
     public static long fromLongForm(String dhms) {
         long seconds = 0, minutes = 0, hours = 0, days = 0;
         if (dhms.contains("days")) {
