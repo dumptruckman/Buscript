@@ -402,4 +402,14 @@ public class Buscript {
             Context.exit();
         }
     }
+
+    /**
+     * This method will remove any scripts scheduled to be executed for the target.  Null is a valid target.
+     *
+     * @param target The target to remove scheduled scripts for.
+     */
+    public void clearScheduledScripts(String target) {
+        delayedScripts.remove(target);
+        saveData();
+    }
 }

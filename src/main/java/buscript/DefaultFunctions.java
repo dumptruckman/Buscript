@@ -125,4 +125,8 @@ class DefaultFunctions extends ScriptableObject {
         buscript.scheduleScript(new File(buscript.getScriptFolder(), buscript.replaceName(script)),
                 buscript.replaceName(target), d * 1000);
     }
+
+    public void clearScripts(String target) {
+        buscript.clearScheduledScripts(target);
+    }
 }
