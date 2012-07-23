@@ -81,7 +81,7 @@ class DefaultFunctions extends ScriptableObject {
 
     public boolean hasMoney(String player, Double money) {
         if (buscript.getEconomy() != null) {
-            return buscript.getEconomy().has(player, money);
+            return buscript.getEconomy().has(buscript.replaceName(player), money);
         } else {
             throw new IllegalStateException("Vault must be installed to use hasMoney(player, money)!");
         }
@@ -89,7 +89,7 @@ class DefaultFunctions extends ScriptableObject {
 
     public boolean addMoney(String player, Double money) {
         if (buscript.getEconomy() != null) {
-            return buscript.getEconomy().depositPlayer(player, money).transactionSuccess();
+            return buscript.getEconomy().depositPlayer(buscript.replaceName(player), money).transactionSuccess();
         } else {
             throw new IllegalStateException("Vault must be installed to use addMoney(player, money)!");
         }
@@ -97,14 +97,14 @@ class DefaultFunctions extends ScriptableObject {
 
     public boolean removeMoney(String player, Double money) {
         if (buscript.getEconomy() != null) {
-            return buscript.getEconomy().withdrawPlayer(player, money).transactionSuccess();
+            return buscript.getEconomy().withdrawPlayer(buscript.replaceName(player), money).transactionSuccess();
         } else {
             throw new IllegalStateException("Vault must be installed to use removeMoney(player, money)!");
         }
     }
 
     public boolean isOnline(String name) {
-        return Bukkit.getPlayerExact(name) != null;
+        return Bukkit.getPlayerExact(buscript.replaceName(name)) != null;
     }
 
     public void run(String script) {
