@@ -42,45 +42,41 @@ class ScriptTask implements Runnable {
                             if (script.get("file") != null) {
                                 final File scriptFile = new File(script.get("file").toString());
                                 if (scriptFile.exists()) {
-                                    if (entry.getKey().equals(Buscript.NULL)) {
+                                    try {
+                                        final List<Map<String, Object>> replacements = (List<Map<String, Object>>) script.get("replacements");
                                         Bukkit.getScheduler().scheduleSyncDelayedTask(plugin, new Runnable() {
                                             @Override
                                             public void run() {
-                                                buscript.executeScript(scriptFile);
+                                                buscript.executeDelayedScript(scriptFile, replacements);
                                             }
                                         });
-                                    } else {
-                                        Bukkit.getScheduler().scheduleSyncDelayedTask(plugin, new Runnable() {
-                                            @Override
-                                            public void run() {
-                                                buscript.executeScript(scriptFile, entry.getKey());
-                                            }
-                                        });
+                                        scriptsIt.remove();
+                                        removed = true;
+                                    } catch (ClassCastException e) {
+                                        scriptsIt.remove();
+                                        removed = true;
+                                        System.out.println("could not cast");
                                     }
-                                    scriptsIt.remove();
-                                    removed = true;
                                 } else {
                                     try {
                                         scriptFile.createNewFile();
                                     } catch (IOException ignore) { }
                                     if (scriptFile.exists()) {
-                                        if (entry.getKey().equals(Buscript.NULL)) {
+                                        try {
+                                            final List<Map<String, Object>> replacements = (List<Map<String, Object>>) script.get("replacements");
                                             Bukkit.getScheduler().scheduleSyncDelayedTask(plugin, new Runnable() {
                                                 @Override
                                                 public void run() {
-                                                    buscript.executeScript(scriptFile);
+                                                    buscript.executeDelayedScript(scriptFile, replacements);
                                                 }
                                             });
-                                        } else {
-                                            Bukkit.getScheduler().scheduleSyncDelayedTask(plugin, new Runnable() {
-                                                @Override
-                                                public void run() {
-                                                    buscript.executeScript(scriptFile, entry.getKey());
-                                                }
-                                            });
+                                            scriptsIt.remove();
+                                            removed = true;
+                                        } catch (ClassCastException e) {
+                                            scriptsIt.remove();
+                                            removed = true;
+                                            System.out.println("could not cast");
                                         }
-                                        scriptsIt.remove();
-                                        removed = true;
                                     } else {
                                         plugin.getLogger().warning("Missing script file: " + scriptFile);
                                         scriptsIt.remove();

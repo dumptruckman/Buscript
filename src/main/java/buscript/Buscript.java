@@ -45,8 +45,36 @@ public class Buscript {
     private File scriptFile;
     private FileConfiguration scriptConfig;
 
+    private List<Map<String, Object>> delayedReplacements = null;
+
+    private final List<StringReplacer> stringReplacers = new ArrayList<StringReplacer>();
+
     boolean runTasks;
     Map<String, List<Map<String, Object>>> delayedScripts = new HashMap<String, List<Map<String, Object>>>();
+
+    private static class TargetReplacer implements StringReplacer {
+
+        private Buscript buscript;
+
+        private TargetReplacer(Buscript buscript) {
+            this.buscript = buscript;
+        }
+
+        @Override
+        public String getRegexString() {
+            return "%t";
+        }
+
+        @Override
+        public String getReplacement() {
+            return buscript.getTarget();
+        }
+
+        @Override
+        public String getGlobalVarName() {
+            return "target";
+        }
+    }
 
     /**
      * Creates a new Buscript object, which is used to execute Javascript script files.  This object is not thread-safe
@@ -56,6 +84,7 @@ public class Buscript {
      */
     public Buscript(Plugin plugin) {
         this.plugin = plugin;
+        registerStringReplacer(new TargetReplacer(this));
         // Create script folder in plugin's directory.
         scriptFolder = new File(plugin.getDataFolder(), "scripts");
         if (!getScriptFolder().exists()) {
@@ -68,6 +97,7 @@ public class Buscript {
             // Adds the current server instance as a script variable "server".
             global.put("server", global, Bukkit.getServer());
             global.put("plugin", global, plugin);
+            global.put("NULL", global, NULL);
         } finally {
             Context.exit();
         }
@@ -104,7 +134,10 @@ public class Buscript {
                                     plugin.getLogger().warning("Script data error, time reset");
                                     script.put(keyObj.toString(), 0);
                                 }
-                            } else {
+                            }/* else if (keyObj.toString().equals("replacements")) {
+                                Object obj = scriptMap.get(keyObj);
+                                System.out.println(obj);
+                            }*/ else {
                                 script.put(keyObj.toString(), scriptMap.get(keyObj));
                             }
                         }
@@ -240,21 +273,54 @@ public class Buscript {
     }
 
     /**
-     * Replaces all instance of %t in a string with the scripts current target {@link #getTarget()}.  If no target has
-     * been defined for the current script, %t will be replaced with !!NULL.
+     * Loops through all StringReplacers registered with this Buscript object and replaces their regex strings with
+     * their replacement string and returns the result.  By default this includes a replacement of %t with the script's
+     * current target.
      *
      * @param string The string to replace in.
-     * @return The string that has had replacements for %t.
+     * @return The string that has had replacements for each registered StringReplacer.
      */
-    public String replaceName(String string) {
+    public String stringReplace(String string) {
         if (string == null) {
             throw new IllegalArgumentException("string must not be null");
         }
-        String target = this.target;
-        if (target == null) {
-            target = Buscript.NULL;
+        String result = string;
+        if (delayedReplacements != null) {
+            for (Map<String, Object> replacement : delayedReplacements) {
+                Object regex = replacement.get("regex");
+                Object replace = replacement.get("replace");
+                if (regex != null) {
+                    if (replace == null) {
+                        replace = NULL;
+                    }
+                    result = result.replaceAll(regex.toString(), replace.toString());
+                }
+            }
+        } else {
+            for (StringReplacer r : stringReplacers) {
+                String replace = r.getReplacement();
+                if (replace == null) {
+                    replace = NULL;
+                }
+                result = result.replaceAll(r.getRegexString(), replace);
+            }
         }
-        return string.replaceAll("%t", target);
+        return result;
+    }
+
+    /**
+     * Adds a new {@link StringReplacer} to this Buscript instance which will allow built in global script functions
+     * to replace strings as defined by the replacer.
+     *
+     * @param replacer the new StringReplacer to add.
+     */
+    public void registerStringReplacer(StringReplacer replacer) {
+        for (StringReplacer r : stringReplacers) {
+            if (r.getRegexString().equals(replacer.getRegexString())) {
+                throw new IllegalArgumentException("The regex string is already registered!");
+            }
+        }
+        stringReplacers.add(replacer);
     }
 
     /**
@@ -301,6 +367,12 @@ public class Buscript {
         }
     }
 
+    void executeDelayedScript(File scriptFile, List<Map<String, Object>> replacements) {
+        delayedReplacements = replacements;
+        executeScript(scriptFile, null, null);
+        delayedReplacements = null;
+    }
+
     /**
      * Executes the given scriptFile with no target.
      *
@@ -341,7 +413,7 @@ public class Buscript {
      */
     public void executeScript(File scriptFile, String target, Player executor) {
         this.target = target;
-        runScript(scriptFile, executor, target == null ? NULL : target);
+        runScript(scriptFile, executor);
     }
 
     /**
@@ -374,14 +446,51 @@ public class Buscript {
         Map<String, Object> script = new HashMap<String, Object>(2);
         script.put("time", System.currentTimeMillis() + delay);
         script.put("file", scriptFile.toString());
+        List<Map<String, Object>> replacements = new ArrayList<Map<String, Object>>(stringReplacers.size());
+        for (StringReplacer r : stringReplacers) {
+            Map<String, Object> replacement = new HashMap<String, Object>(2);
+            replacement.put("regex", r.getRegexString());
+            String replace = r.getReplacement();
+            if (replace != null) {
+                replacement.put("replace", replace);
+            }
+            String var = r.getGlobalVarName();
+            if (var != null) {
+                replacement.put("var", var);
+            }
+            replacements.add(replacement);
+        }
+        script.put("replacements", replacements);
         playerScripts.add(script);
         saveData();
     }
 
-    private void runScript(File script, Player executor, String target) {
+    private void runScript(File script, Player executor) {
         Context cx = Context.enter();
         try {
-            global.put("target", global, target);
+            if (delayedReplacements != null) {
+                for (Map<String, Object> replacement : delayedReplacements) {
+                    Object var = replacement.get("var");
+                    Object replace = replacement.get("replace");
+                    if (var != null) {
+                        if (replace == null) {
+                            replace = NULL;
+                        }
+                        global.put(var.toString(), global, replace);
+                    }
+                }
+            } else {
+                for (StringReplacer r : stringReplacers) {
+                    String var = r.getGlobalVarName();
+                    String replace = r.getReplacement();
+                    if (var != null) {
+                        if (replace == null) {
+                            replace = NULL;
+                        }
+                        global.put(var, global, replace);
+                    }
+                }
+            }
             Reader reader = null;
             try{
                 reader = new FileReader(script);

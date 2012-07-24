@@ -24,39 +24,39 @@ class DefaultFunctions extends ScriptableObject {
     }
 
     public void broadcast(String message) {
-        Bukkit.broadcastMessage(buscript.replaceName(message));
+        Bukkit.broadcastMessage(buscript.stringReplace(message));
     }
 
     public void broadcastPerm(String message, String permission) {
-        Bukkit.broadcast(buscript.replaceName(message), permission);
+        Bukkit.broadcast(buscript.stringReplace(message), permission);
     }
 
     public void command(String command) {
-        Bukkit.dispatchCommand(Bukkit.getConsoleSender(), buscript.replaceName(command));
+        Bukkit.dispatchCommand(Bukkit.getConsoleSender(), buscript.stringReplace(command));
     }
 
     public void commandSpoof(String name, String command) {
-        Player player = Bukkit.getPlayerExact(buscript.replaceName(name));
+        Player player = Bukkit.getPlayerExact(buscript.stringReplace(name));
         if (player != null) {
-            Bukkit.dispatchCommand(player, buscript.replaceName(command));
+            Bukkit.dispatchCommand(player, buscript.stringReplace(command));
         }
     }
 
     public void message(String name, String message) {
-        Player player = Bukkit.getPlayerExact(buscript.replaceName(name));
+        Player player = Bukkit.getPlayerExact(buscript.stringReplace(name));
         if (player != null) {
-            player.sendMessage(buscript.replaceName(message));
+            player.sendMessage(buscript.stringReplace(message));
         }
     }
 
     public boolean hasPerm(String name, String permission) {
-        Player player = Bukkit.getPlayerExact(buscript.replaceName(name));
+        Player player = Bukkit.getPlayerExact(buscript.stringReplace(name));
         return player != null && player.hasPermission(permission);
     }
 
     public boolean hasPermOffline(String world, String player, String permission) {
         if (buscript.getPermissions() != null) {
-            return buscript.getPermissions().has(world, buscript.replaceName(player), permission);
+            return buscript.getPermissions().has(world, buscript.stringReplace(player), permission);
         } else {
             throw new IllegalStateException("Vault must be installed to use hasPermOffline(world, player, perm)!");
         }
@@ -64,7 +64,7 @@ class DefaultFunctions extends ScriptableObject {
 
     public void addPerm(String world, String player, String permission) {
         if (buscript.getPermissions() != null) {
-            buscript.getPermissions().playerAdd(world, buscript.replaceName(player), permission);
+            buscript.getPermissions().playerAdd(world, buscript.stringReplace(player), permission);
         } else {
             throw new IllegalStateException("Vault must be installed to use addPerm(world, player, perm)!");
         }
@@ -72,7 +72,7 @@ class DefaultFunctions extends ScriptableObject {
 
     public void removePerm(String world, String player, String permission) {
         if (buscript.getPermissions() != null) {
-            buscript.getPermissions().playerRemove(world, buscript.replaceName(player), permission);
+            buscript.getPermissions().playerRemove(world, buscript.stringReplace(player), permission);
         } else {
             throw new IllegalStateException("Vault must be installed to use removePerm(world, player, perm)!");
         }
@@ -80,7 +80,7 @@ class DefaultFunctions extends ScriptableObject {
 
     public boolean hasMoney(String player, Double money) {
         if (buscript.getEconomy() != null) {
-            return buscript.getEconomy().has(buscript.replaceName(player), money);
+            return buscript.getEconomy().has(buscript.stringReplace(player), money);
         } else {
             throw new IllegalStateException("Vault must be installed to use hasMoney(player, money)!");
         }
@@ -88,7 +88,7 @@ class DefaultFunctions extends ScriptableObject {
 
     public boolean addMoney(String player, Double money) {
         if (buscript.getEconomy() != null) {
-            return buscript.getEconomy().depositPlayer(buscript.replaceName(player), money).transactionSuccess();
+            return buscript.getEconomy().depositPlayer(buscript.stringReplace(player), money).transactionSuccess();
         } else {
             throw new IllegalStateException("Vault must be installed to use addMoney(player, money)!");
         }
@@ -96,34 +96,34 @@ class DefaultFunctions extends ScriptableObject {
 
     public boolean removeMoney(String player, Double money) {
         if (buscript.getEconomy() != null) {
-            return buscript.getEconomy().withdrawPlayer(buscript.replaceName(player), money).transactionSuccess();
+            return buscript.getEconomy().withdrawPlayer(buscript.stringReplace(player), money).transactionSuccess();
         } else {
             throw new IllegalStateException("Vault must be installed to use removeMoney(player, money)!");
         }
     }
 
     public boolean isOnline(String name) {
-        return Bukkit.getPlayerExact(buscript.replaceName(name)) != null;
+        return Bukkit.getPlayerExact(buscript.stringReplace(name)) != null;
     }
 
     public void run(String script) {
-        buscript.executeScript(new File(buscript.getScriptFolder(), buscript.replaceName(script)));
+        buscript.executeScript(new File(buscript.getScriptFolder(), buscript.stringReplace(script)));
     }
 
     public void runTarget(String script, String target) {
-        buscript.executeScript(new File(buscript.getScriptFolder(), buscript.replaceName(script)),
-                buscript.replaceName(target));
+        buscript.executeScript(new File(buscript.getScriptFolder(), buscript.stringReplace(script)),
+                buscript.stringReplace(target));
     }
 
     public void runLater(String script, String delay) {
         long d = TimeTools.fromShortForm(delay);
-        buscript.scheduleScript(new File(buscript.getScriptFolder(), buscript.replaceName(script)), d * 1000);
+        buscript.scheduleScript(new File(buscript.getScriptFolder(), buscript.stringReplace(script)), d * 1000);
     }
 
     public void runLaterTarget(String script, String delay, String target) {
         long d = TimeTools.fromShortForm(delay);
-        buscript.scheduleScript(new File(buscript.getScriptFolder(), buscript.replaceName(script)),
-                buscript.replaceName(target), d * 1000);
+        buscript.scheduleScript(new File(buscript.getScriptFolder(), buscript.stringReplace(script)),
+                buscript.stringReplace(target), d * 1000);
     }
 
     public void clearScripts(String target) {
