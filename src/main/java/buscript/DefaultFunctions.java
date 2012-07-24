@@ -129,4 +129,8 @@ class DefaultFunctions extends ScriptableObject {
     public void clearScripts(String target) {
         buscript.clearScheduledScripts(target);
     }
+
+    public String stringReplace(String string) {
+        return buscript.stringReplace(string);
+    }
 }
