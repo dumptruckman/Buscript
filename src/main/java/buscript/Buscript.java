@@ -7,14 +7,11 @@ import net.milkbowl.vault.chat.Chat;
 import net.milkbowl.vault.economy.Economy;
 import net.milkbowl.vault.permission.Permission;
 import org.bukkit.Bukkit;
+import org.bukkit.ChatColor;
 import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.entity.Player;
-import org.bukkit.event.EventHandler;
-import org.bukkit.event.Listener;
-import org.bukkit.event.server.PluginDisableEvent;
-import org.bukkit.event.server.PluginEnableEvent;
 import org.bukkit.plugin.Plugin;
 import org.bukkit.plugin.RegisteredServiceProvider;
 import org.mozilla.javascript.Context;
@@ -275,7 +272,7 @@ public class Buscript {
     /**
      * Loops through all StringReplacers registered with this Buscript object and replaces their regex strings with
      * their replacement string and returns the result.  By default this includes a replacement of %t with the script's
-     * current target.
+     * current target.  This will also replace '&' with the appropriate color character.
      *
      * @param string The string to replace in.
      * @return The string that has had replacements for each registered StringReplacer.
@@ -305,6 +302,7 @@ public class Buscript {
                 result = result.replaceAll(r.getRegexString(), replace);
             }
         }
+        result = ChatColor.translateAlternateColorCodes('&', result);
         return result;
     }
 

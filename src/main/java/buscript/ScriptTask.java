@@ -53,9 +53,9 @@ class ScriptTask implements Runnable {
                                         scriptsIt.remove();
                                         removed = true;
                                     } catch (ClassCastException e) {
+                                        plugin.getLogger().warning("Invalid delayed script entry");
                                         scriptsIt.remove();
                                         removed = true;
-                                        System.out.println("could not cast");
                                     }
                                 } else {
                                     try {
