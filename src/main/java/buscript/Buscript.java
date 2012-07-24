@@ -69,6 +69,30 @@ public class Buscript {
 
         @Override
         public String getGlobalVarName() {
+            return null;
+        }
+    }
+
+    private static class AlternateTargetReplacer implements StringReplacer {
+
+        private Buscript buscript;
+
+        private AlternateTargetReplacer(Buscript buscript) {
+            this.buscript = buscript;
+        }
+
+        @Override
+        public String getRegexString() {
+            return "%target%";
+        }
+
+        @Override
+        public String getReplacement() {
+            return buscript.getTarget();
+        }
+
+        @Override
+        public String getGlobalVarName() {
             return "target";
         }
     }
@@ -82,6 +106,7 @@ public class Buscript {
     public Buscript(Plugin plugin) {
         this.plugin = plugin;
         registerStringReplacer(new TargetReplacer(this));
+        registerStringReplacer(new AlternateTargetReplacer(this));
         // Create script folder in plugin's directory.
         scriptFolder = new File(plugin.getDataFolder(), "scripts");
         if (!getScriptFolder().exists()) {
