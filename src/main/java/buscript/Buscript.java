@@ -46,6 +46,8 @@ public class Buscript {
 
     private final List<StringReplacer> stringReplacers = new ArrayList<StringReplacer>();
 
+    private Map<String, Object> metaData = new HashMap<String, Object>();
+
     boolean runTasks;
     Map<String, List<Map<String, Object>>> delayedScripts = new HashMap<String, List<Map<String, Object>>>();
 
@@ -94,6 +96,7 @@ public class Buscript {
             // Adds the current server instance as a script variable "server".
             global.put("server", global, Bukkit.getServer());
             global.put("plugin", global, plugin);
+            global.put("metaData", global, metaData);
             global.put("NULL", global, NULL);
         } finally {
             Context.exit();
@@ -295,11 +298,15 @@ public class Buscript {
             }
         } else {
             for (StringReplacer r : stringReplacers) {
+                String regex = r.getRegexString();
+                if (regex == null) {
+                    continue;
+                }
                 String replace = r.getReplacement();
                 if (replace == null) {
                     replace = NULL;
                 }
-                result = result.replaceAll(r.getRegexString(), replace);
+                result = result.replaceAll(regex, replace);
             }
         }
         result = ChatColor.translateAlternateColorCodes('&', result);
@@ -365,7 +372,10 @@ public class Buscript {
         }
     }
 
-    void executeDelayedScript(File scriptFile, List<Map<String, Object>> replacements) {
+    void executeDelayedScript(File scriptFile, List<Map<String, Object>> replacements, Map<String, Object> data) {
+        if (data != null) {
+            metaData = data;
+        }
         delayedReplacements = replacements;
         executeScript(scriptFile, null, null);
         delayedReplacements = null;
@@ -412,6 +422,8 @@ public class Buscript {
     public void executeScript(File scriptFile, String target, Player executor) {
         this.target = target;
         runScript(scriptFile, executor);
+        this.target = null;
+        metaData.clear();
     }
 
     /**
@@ -447,7 +459,10 @@ public class Buscript {
         List<Map<String, Object>> replacements = new ArrayList<Map<String, Object>>(stringReplacers.size());
         for (StringReplacer r : stringReplacers) {
             Map<String, Object> replacement = new HashMap<String, Object>(2);
-            replacement.put("regex", r.getRegexString());
+            String regex = r.getRegexString();
+            if (regex != null) {
+                replacement.put("regex", regex);
+            }
             String replace = r.getReplacement();
             if (replace != null) {
                 replacement.put("replace", replace);
@@ -459,6 +474,7 @@ public class Buscript {
             replacements.add(replacement);
         }
         script.put("replacements", replacements);
+        script.put("metaData", new HashMap<String, Object>(metaData));
         playerScripts.add(script);
         saveData();
     }
@@ -489,6 +505,7 @@ public class Buscript {
                     }
                 }
             }
+            global.put("metaData", global, metaData);
             Reader reader = null;
             try{
                 reader = new FileReader(script);

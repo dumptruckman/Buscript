@@ -44,10 +44,11 @@ class ScriptTask implements Runnable {
                                 if (scriptFile.exists()) {
                                     try {
                                         final List<Map<String, Object>> replacements = (List<Map<String, Object>>) script.get("replacements");
+                                        final Map<String, Object> metaData = (Map<String, Object>) script.get("metaData");
                                         Bukkit.getScheduler().scheduleSyncDelayedTask(plugin, new Runnable() {
                                             @Override
                                             public void run() {
-                                                buscript.executeDelayedScript(scriptFile, replacements);
+                                                buscript.executeDelayedScript(scriptFile, replacements, metaData);
                                             }
                                         });
                                         scriptsIt.remove();
@@ -64,10 +65,11 @@ class ScriptTask implements Runnable {
                                     if (scriptFile.exists()) {
                                         try {
                                             final List<Map<String, Object>> replacements = (List<Map<String, Object>>) script.get("replacements");
+                                            final Map<String, Object> metaData = (Map<String, Object>) script.get("metaData");
                                             Bukkit.getScheduler().scheduleSyncDelayedTask(plugin, new Runnable() {
                                                 @Override
                                                 public void run() {
-                                                    buscript.executeDelayedScript(scriptFile, replacements);
+                                                    buscript.executeDelayedScript(scriptFile, replacements, metaData);
                                                 }
                                             });
                                             scriptsIt.remove();
