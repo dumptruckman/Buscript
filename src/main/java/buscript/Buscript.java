@@ -24,6 +24,7 @@ import java.io.Reader;
 import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 
@@ -320,9 +321,11 @@ public class Buscript {
      * @param replacer the new StringReplacer to add.
      */
     public void registerStringReplacer(StringReplacer replacer) {
-        for (StringReplacer r : stringReplacers) {
+        Iterator<StringReplacer> it = stringReplacers.iterator();
+        while (it.hasNext()) {
+            StringReplacer r = it.next();
             if (r.getRegexString().equals(replacer.getRegexString())) {
-                throw new IllegalArgumentException("The regex string is already registered!");
+                it.remove();
             }
         }
         stringReplacers.add(replacer);
