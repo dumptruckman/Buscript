@@ -3,7 +3,6 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 package buscript;
 
-import org.bukkit.Bukkit;
 import org.bukkit.plugin.Plugin;
 
 import java.io.File;
@@ -16,15 +15,25 @@ class ScriptTask implements Runnable {
 
     private Buscript buscript;
     private Plugin plugin;
+    private int id = -1;
 
     ScriptTask(Buscript buscript) {
         this.plugin = buscript.getPlugin();
         this.buscript = buscript;
     }
 
+    void start() {
+        id = plugin.getServer().getScheduler().scheduleSyncRepeatingTask(plugin, this, 20L, 20L);
+    }
+
+    void kill() {
+        plugin.getServer().getScheduler().cancelTask(id);
+    }
+
     @Override
     public void run() {
         if (!buscript.runTasks) {
+            kill();
             return;
         }
         long time = System.currentTimeMillis();
@@ -45,7 +54,7 @@ class ScriptTask implements Runnable {
                                     try {
                                         final List<Map<String, Object>> replacements = (List<Map<String, Object>>) script.get("replacements");
                                         final Map<String, Object> metaData = (Map<String, Object>) script.get("metaData");
-                                        Bukkit.getScheduler().scheduleSyncDelayedTask(plugin, new Runnable() {
+                                        buscript.getPlugin().getServer().getScheduler().scheduleSyncDelayedTask(plugin, new Runnable() {
                                             @Override
                                             public void run() {
                                                 buscript.executeDelayedScript(scriptFile, replacements, metaData);
@@ -66,7 +75,7 @@ class ScriptTask implements Runnable {
                                         try {
                                             final List<Map<String, Object>> replacements = (List<Map<String, Object>>) script.get("replacements");
                                             final Map<String, Object> metaData = (Map<String, Object>) script.get("metaData");
-                                            Bukkit.getScheduler().scheduleSyncDelayedTask(plugin, new Runnable() {
+                                            buscript.getPlugin().getServer().getScheduler().scheduleSyncDelayedTask(plugin, new Runnable() {
                                                 @Override
                                                 public void run() {
                                                     buscript.executeDelayedScript(scriptFile, replacements, metaData);
@@ -106,6 +115,7 @@ class ScriptTask implements Runnable {
                 buscript.saveData();
             }
         }
-        plugin.getServer().getScheduler().scheduleSyncDelayedTask(plugin, this, 20L);
     }
+
+
 }

@@ -6,7 +6,6 @@ package buscript;
 import net.milkbowl.vault.chat.Chat;
 import net.milkbowl.vault.economy.Economy;
 import net.milkbowl.vault.permission.Permission;
-import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.configuration.file.FileConfiguration;
@@ -48,7 +47,7 @@ public class Buscript {
 
     private Map<String, Object> metaData = new HashMap<String, Object>();
 
-    boolean runTasks;
+    boolean runTasks = true;
     Map<String, List<Map<String, Object>>> delayedScripts = new HashMap<String, List<Map<String, Object>>>();
 
     private static class TargetReplacer implements StringReplacer {
@@ -94,7 +93,7 @@ public class Buscript {
         try {
             global = cx.initStandardObjects();
             // Adds the current server instance as a script variable "server".
-            global.put("server", global, Bukkit.getServer());
+            global.put("server", global, plugin.getServer());
             global.put("plugin", global, plugin);
             global.put("metaData", global, metaData);
             global.put("NULL", global, NULL);
@@ -105,13 +104,14 @@ public class Buscript {
         addScriptMethods(new DefaultFunctions(this));
         // Sets up permissions with vault.
         setupVault();
+        plugin.getServer().getPluginManager().registerEvents(new VaultListener(this), plugin);
         // Initializes the delayed script data.
         initData();
         // Starts up a task to check for scripts that need to run at a specific time.
-        runTasks = true;
-        Bukkit.getScheduler().scheduleSyncDelayedTask(plugin, new ScriptTask(this), 20L);
+        ScriptTask scriptTask = new ScriptTask(this);
+        scriptTask.start();
         // Registers events with bukkit.
-        Bukkit.getPluginManager().registerEvents(new BuscriptListener(this), plugin);
+        plugin.getServer().getPluginManager().registerEvents(new BuscriptListener(this), plugin);
     }
 
     private void initData() {
@@ -131,7 +131,7 @@ public class Buscript {
                                 try {
                                     script.put(keyObj.toString(), Long.valueOf(scriptMap.get(keyObj).toString()));
                                 } catch (NumberFormatException e) {
-                                    plugin.getLogger().warning("Script data error, time reset");
+                                    getPlugin().getLogger().warning("Script data error, time reset");
                                     script.put(keyObj.toString(), 0);
                                 }
                             }/* else if (keyObj.toString().equals("replacements")) {
@@ -149,18 +149,18 @@ public class Buscript {
     }
 
     void setupVault() {
-        if (Bukkit.getPluginManager().getPlugin("Vault") == null) {
+        if (getPlugin().getServer().getPluginManager().getPlugin("Vault") == null) {
             return;
         }
-        RegisteredServiceProvider<Permission> permissionProvider = Bukkit.getServer().getServicesManager().getRegistration(net.milkbowl.vault.permission.Permission.class);
+        RegisteredServiceProvider<Permission> permissionProvider = getPlugin().getServer().getServicesManager().getRegistration(net.milkbowl.vault.permission.Permission.class);
         if (permissionProvider != null) {
             permissions = permissionProvider.getProvider();
         }
-        RegisteredServiceProvider<Economy> economyProvider = Bukkit.getServer().getServicesManager().getRegistration(net.milkbowl.vault.economy.Economy.class);
+        RegisteredServiceProvider<Economy> economyProvider = getPlugin().getServer().getServicesManager().getRegistration(net.milkbowl.vault.economy.Economy.class);
         if (economyProvider != null) {
             economy = economyProvider.getProvider();
         }
-        RegisteredServiceProvider<Chat> chatProvider = Bukkit.getServer().getServicesManager().getRegistration(net.milkbowl.vault.chat.Chat.class);
+        RegisteredServiceProvider<Chat> chatProvider = getPlugin().getServer().getServicesManager().getRegistration(net.milkbowl.vault.chat.Chat.class);
         if (chatProvider != null) {
             chat = chatProvider.getProvider();
         }
@@ -511,7 +511,7 @@ public class Buscript {
                 reader = new FileReader(script);
                 cx.evaluateReader(global, reader, script.toString(), 1, null);
             } catch (Exception e) {
-                plugin.getLogger().warning("Error running script: " + e.getMessage());
+                getPlugin().getLogger().warning("Error running script: " + e.getMessage());
                 if (executor != null) {
                     executor.sendMessage("Error running script: " + e.getMessage());
                 }

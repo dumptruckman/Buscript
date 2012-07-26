@@ -4,7 +4,6 @@
 package buscript;
 
 import buscript.util.TimeTools;
-import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
 import org.mozilla.javascript.ScriptableObject;
 
@@ -24,33 +23,33 @@ class DefaultFunctions extends ScriptableObject {
     }
 
     public void broadcast(String message) {
-        Bukkit.broadcastMessage(buscript.stringReplace(message));
+        buscript.getPlugin().getServer().broadcastMessage(buscript.stringReplace(message));
     }
 
     public void broadcastPerm(String message, String permission) {
-        Bukkit.broadcast(buscript.stringReplace(message), permission);
+        buscript.getPlugin().getServer().broadcast(buscript.stringReplace(message), permission);
     }
 
     public void command(String command) {
-        Bukkit.dispatchCommand(Bukkit.getConsoleSender(), buscript.stringReplace(command));
+        buscript.getPlugin().getServer().dispatchCommand(buscript.getPlugin().getServer().getConsoleSender(), buscript.stringReplace(command));
     }
 
     public void commandSpoof(String name, String command) {
-        Player player = Bukkit.getPlayerExact(buscript.stringReplace(name));
+        Player player = buscript.getPlugin().getServer().getPlayerExact(buscript.stringReplace(name));
         if (player != null) {
-            Bukkit.dispatchCommand(player, buscript.stringReplace(command));
+            buscript.getPlugin().getServer().dispatchCommand(player, buscript.stringReplace(command));
         }
     }
 
     public void message(String name, String message) {
-        Player player = Bukkit.getPlayerExact(buscript.stringReplace(name));
+        Player player = buscript.getPlugin().getServer().getPlayerExact(buscript.stringReplace(name));
         if (player != null) {
             player.sendMessage(buscript.stringReplace(message));
         }
     }
 
     public boolean hasPerm(String name, String permission) {
-        Player player = Bukkit.getPlayerExact(buscript.stringReplace(name));
+        Player player = buscript.getPlugin().getServer().getPlayerExact(buscript.stringReplace(name));
         return player != null && player.hasPermission(permission);
     }
 
@@ -103,7 +102,7 @@ class DefaultFunctions extends ScriptableObject {
     }
 
     public boolean isOnline(String name) {
-        return Bukkit.getPlayerExact(buscript.stringReplace(name)) != null;
+        return buscript.getPlugin().getServer().getPlayerExact(buscript.stringReplace(name)) != null;
     }
 
     public void run(String script) {
