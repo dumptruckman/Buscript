@@ -40,24 +40,29 @@ public class BuscriptPlugin extends JavaPlugin {
 
     @Override
     public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
-        if (args.length < 1) {
-            return false;
-        }
-        File scriptFile = new File(getAPI().getScriptFolder(), args[0]);
-        if (!scriptFile.exists()) {
-            sender.sendMessage("Script '" + scriptFile + "' does not exist!");
-            return true;
-        }
-        Player player = null;
-        if (sender instanceof Player) {
-            player = (Player) sender;
-        }
-        if (args.length == 1) {
-            getAPI().executeScript(scriptFile, player);
-            return true;
-        } else if (args.length == 2) {
-            getAPI().executeScript(scriptFile, args[1], player);
-            return true;
+        if (label.equalsIgnoreCase("run")) {
+            if (args.length < 1) {
+                return false;
+            }
+            File scriptFile = new File(getAPI().getScriptFolder(), args[0]);
+            if (!scriptFile.exists()) {
+                sender.sendMessage("Script '" + scriptFile + "' does not exist!");
+                return true;
+            }
+            Player player = null;
+            if (sender instanceof Player) {
+                player = (Player) sender;
+            }
+            if (args.length == 1) {
+                getAPI().executeScript(scriptFile, player);
+                return true;
+            } else if (args.length == 2) {
+                getAPI().executeScript(scriptFile, args[1], player);
+                return true;
+            }
+        } else if (label.equalsIgnoreCase("breload")) {
+            buscript.clearScriptCache();
+            sender.sendMessage("Script cache cleared!");
         }
         return false;
     }

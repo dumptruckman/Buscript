@@ -6,10 +6,16 @@ softdepend: [Vault]
 
 commands:
   run:
-    description: reloads script file and config
+    description: Runs the given script file with an optional target
     usage: /<command> <script> [player]
     permission: buscript.run
+  breload:
+    description: Forces any cached scripts to be reloaded (useful for registered events)
+    usage: /<command>
+    permission: buscript.reload
 
 permissions:
   buscript.run:
+    default: OP
+  buscript.reload:
     default: OP
