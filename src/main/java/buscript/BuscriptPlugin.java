@@ -9,6 +9,7 @@ import org.bukkit.entity.Player;
 import org.bukkit.plugin.java.JavaPlugin;
 
 import java.io.File;
+import java.io.IOException;
 
 /**
  * The main Plugin class which allows this script library to be run as a plugin and gives access to the command "run".
@@ -20,6 +21,12 @@ public class BuscriptPlugin extends JavaPlugin {
     @Override
     public void onEnable() {
         buscript = new Buscript(this);
+        getServer().getScheduler().scheduleSyncDelayedTask(this, new Runnable() {
+            @Override
+            public void run() {
+                getAPI().executeScript(getStartupScript());
+            }
+        });
     }
 
     /**
@@ -53,5 +60,22 @@ public class BuscriptPlugin extends JavaPlugin {
             return true;
         }
         return false;
+    }
+
+    private File getStartupScript() {
+        File scriptFile = new File(getDataFolder(), "startup-script.txt");
+        if (!scriptFile.exists()) {
+            try {
+                this.saveResource("startup-script.txt", false);
+                if (!scriptFile.exists()) {
+                    scriptFile.createNewFile();
+                }
+            } catch (IOException e) {
+                getLogger().severe("Error creating script file: " + e.getMessage());
+                getServer().getPluginManager().disablePlugin(this);
+                return null;
+            }
+        }
+        return scriptFile;
     }
 }
