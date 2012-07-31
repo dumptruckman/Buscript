@@ -8,16 +8,16 @@ import org.bukkit.plugin.EventExecutor;
 class DefaultEventExecutor implements EventExecutor {
 
     Buscript buscript;
-    String script;
+    String scriptFile;
 
-    DefaultEventExecutor(Buscript buscript, String script) {
+    DefaultEventExecutor(Buscript buscript, String scriptFile) {
         this.buscript = buscript;
-        this.script = script;
+        this.scriptFile = scriptFile;
     }
 
     @Override
     public void execute(Listener listener, Event event) throws EventException {
         buscript.getGlobalScope().put("event", buscript.getGlobalScope(), event);
-        buscript.runScript(script, event.getEventName(), null);
+        buscript.runScript(buscript.getCachedScript(scriptFile), event.getEventName(), null);
     }
 }

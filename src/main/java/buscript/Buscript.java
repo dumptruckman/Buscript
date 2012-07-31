@@ -49,6 +49,7 @@ public class Buscript {
     private File scriptFolder;
     private File scriptFile;
     private FileConfiguration scriptConfig;
+    private Map<String, String> scriptCache = new HashMap<String, String>();
 
     private List<Map<String, Object>> delayedReplacements = null;
 
@@ -574,8 +575,16 @@ public class Buscript {
         saveData();
     }
 
+    /**
+     * Binds a script to a Bukkit event.  The script will be run when the event fires with a "event" variable available
+     * in the script.  The script file will be loaded into a cache for optimal performance.
+     *
+     * @param eventClassName The fully realized class name of the Bukkit event.
+     * @param priorityString The priority for the event: LOWEST, LOW, NORMAL, HIGH, HIGHEST, MONITOR.
+     * @param scriptFile The file containing the script.
+     */
     public void registerEventScript(String eventClassName, String priorityString, File scriptFile) {
-        EventPriority priority = EventPriority.valueOf(priorityString);
+        EventPriority priority = EventPriority.valueOf(priorityString.toUpperCase());
         if (priority == null) {
             getPlugin().getLogger().warning(priorityString + " is not a valid EventPriority!");
             return;
@@ -619,8 +628,38 @@ public class Buscript {
             return;
         }
         Listener listener = new DefaultListener();
-        EventExecutor eventExecutor = new DefaultEventExecutor(this, FileTools.readFileAsString(scriptFile, getPlugin().getLogger()));
+        EventExecutor eventExecutor = new DefaultEventExecutor(this, scriptFile.toString());
         RegisteredListener registeredListener = new RegisteredListener(listener, eventExecutor, priority, getPlugin(), false);
         handlerList.register(registeredListener);
+    }
+
+    void cacheScript(String fileName) {
+        File file = new File(fileName);
+        if (!file.exists()) {
+            try {
+                file.createNewFile();
+            } catch (IOException e) {
+                getPlugin().getLogger().warning(e.getMessage());
+                return;
+            }
+        }
+        scriptCache.put(fileName, FileTools.readFileAsString(file, plugin.getLogger()));
+    }
+
+    String getCachedScript(String fileName) {
+        String cached = scriptCache.get(fileName);
+        if (cached == null) {
+            cacheScript(fileName);
+            cached = scriptCache.get(fileName);
+        }
+        return cached != null ? cached : "";
+    }
+
+    /**
+     * Clears scripts that have been cached so that they may be reloaded from the disk.  Scripts are typically cached
+     * when set bound to an event.
+     */
+    public void clearScriptCache() {
+        scriptCache.clear();
     }
 }
