@@ -5,6 +5,8 @@ package buscript;
 
 import buscript.util.TimeTools;
 import org.bukkit.entity.Player;
+import org.bukkit.event.Event;
+import org.bukkit.event.EventPriority;
 import org.mozilla.javascript.ScriptableObject;
 
 import java.io.File;
@@ -131,5 +133,9 @@ class DefaultFunctions extends ScriptableObject {
 
     public String stringReplace(String string) {
         return buscript.stringReplace(string);
+    }
+
+    public void registerEvent(String event, String priority, String script) {
+        buscript.registerEventScript(event, priority, new File(buscript.getScriptFolder(), script));
     }
 }

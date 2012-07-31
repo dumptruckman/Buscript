@@ -3,6 +3,7 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 package buscript;
 
+import buscript.util.FileTools;
 import net.milkbowl.vault.chat.Chat;
 import net.milkbowl.vault.economy.Economy;
 import net.milkbowl.vault.permission.Permission;
@@ -11,7 +12,13 @@ import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.entity.Player;
+import org.bukkit.event.Event;
+import org.bukkit.event.EventPriority;
+import org.bukkit.event.HandlerList;
+import org.bukkit.event.Listener;
+import org.bukkit.plugin.EventExecutor;
 import org.bukkit.plugin.Plugin;
+import org.bukkit.plugin.RegisteredListener;
 import org.bukkit.plugin.RegisteredServiceProvider;
 import org.mozilla.javascript.Context;
 import org.mozilla.javascript.FunctionObject;
@@ -21,6 +28,7 @@ import java.io.File;
 import java.io.FileReader;
 import java.io.IOException;
 import java.io.Reader;
+import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -482,7 +490,49 @@ public class Buscript {
         saveData();
     }
 
-    private void runScript(File script, Player executor) {
+    void runScript(String script, String source, Player executor) {
+        setup();
+        Context cx = Context.enter();
+        try {
+            try{
+                cx.evaluateString(getGlobalScope(), script, source, 1, null);
+            } catch (Exception e) {
+                getPlugin().getLogger().warning("Error running script: " + e.getMessage());
+                if (executor != null) {
+                    executor.sendMessage("Error running script: " + e.getMessage());
+                }
+            }
+        } finally {
+            Context.exit();
+        }
+    }
+
+    void runScript(File script, Player executor) {
+        setup();
+        Context cx = Context.enter();
+        try {
+            Reader reader = null;
+            try{
+                reader = new FileReader(script);
+                cx.evaluateReader(getGlobalScope(), reader, script.toString(), 1, null);
+            } catch (Exception e) {
+                getPlugin().getLogger().warning("Error running script: " + e.getMessage());
+                if (executor != null) {
+                    executor.sendMessage("Error running script: " + e.getMessage());
+                }
+            } finally {
+                if (reader != null) {
+                    try {
+                        reader.close();
+                    } catch (IOException ignore) { }
+                }
+            }
+        } finally {
+            Context.exit();
+        }
+    }
+
+    private void setup() {
         Context cx = Context.enter();
         try {
             if (delayedReplacements != null) {
@@ -509,22 +559,6 @@ public class Buscript {
                 }
             }
             global.put("metaData", global, metaData);
-            Reader reader = null;
-            try{
-                reader = new FileReader(script);
-                cx.evaluateReader(global, reader, script.toString(), 1, null);
-            } catch (Exception e) {
-                getPlugin().getLogger().warning("Error running script: " + e.getMessage());
-                if (executor != null) {
-                    executor.sendMessage("Error running script: " + e.getMessage());
-                }
-            } finally {
-                if (reader != null) {
-                    try {
-                        reader.close();
-                    } catch (IOException ignore) { }
-                }
-            }
         } finally {
             Context.exit();
         }
@@ -538,5 +572,55 @@ public class Buscript {
     public void clearScheduledScripts(String target) {
         delayedScripts.remove(target);
         saveData();
+    }
+
+    public void registerEventScript(String eventClassName, String priorityString, File scriptFile) {
+        EventPriority priority = EventPriority.valueOf(priorityString);
+        if (priority == null) {
+            getPlugin().getLogger().warning(priorityString + " is not a valid EventPriority!");
+            return;
+        }
+        Class eventClass;
+        try {
+            eventClass = Class.forName(eventClassName);
+        } catch (ClassNotFoundException e) {
+            getPlugin().getLogger().warning(e.getMessage());
+            return;
+        }
+        if (!Event.class.isAssignableFrom(eventClass)) {
+            getPlugin().getLogger().warning("Class must extend " + Event.class);
+            return;
+        }
+        Method method;
+        try {
+            method = eventClass.getDeclaredMethod("getHandlerList");
+        } catch (NoSuchMethodException ignore) {
+            getPlugin().getLogger().warning(eventClass.getName() + " cannot be listened for!");
+            return;
+        }
+        if (method == null) {
+            getPlugin().getLogger().warning(eventClass.getName() + " cannot be listened for!");
+            return;
+        }
+        HandlerList handlerList = null;
+        try {
+            method.setAccessible(true);
+            Object handlerListObj = method.invoke(null);
+            if (handlerListObj == null || !(handlerListObj instanceof HandlerList)) {
+                getPlugin().getLogger().warning(eventClass.getName() + " cannot be listened for!");
+                return;
+            }
+            handlerList = (HandlerList) handlerListObj;
+        } catch (IllegalAccessException ignore) {
+            getPlugin().getLogger().warning(eventClass.getName() + " cannot be listened for!");
+            return;
+        } catch (InvocationTargetException ignore) {
+            getPlugin().getLogger().warning(eventClass.getName() + " cannot be listened for!");
+            return;
+        }
+        Listener listener = new DefaultListener();
+        EventExecutor eventExecutor = new DefaultEventExecutor(this, FileTools.readFileAsString(scriptFile, getPlugin().getLogger()));
+        RegisteredListener registeredListener = new RegisteredListener(listener, eventExecutor, priority, getPlugin(), false);
+        handlerList.register(registeredListener);
     }
 }
