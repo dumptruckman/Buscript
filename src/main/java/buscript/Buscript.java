@@ -413,7 +413,7 @@ public class Buscript {
     }
 
     /**
-     *
+     * Executes the given scriptFile with the given target.
      *
      * @param scriptFile the file to execute.
      * @param target the target of the script which is used to replace the string '%t' and is added in the global scope
@@ -434,6 +434,61 @@ public class Buscript {
     public void executeScript(File scriptFile, String target, Player executor) {
         this.target = target;
         runScript(scriptFile, executor);
+        this.target = null;
+        metaData.clear();
+    }
+
+    /**
+     * Executes the given script string (literal javascript) with no target.
+     *
+     * @param script The literal javascript to execute.
+     * @param source The source of the script.  This can be anything except null.  It is what will show up if errors
+     *               occur.
+     */
+    public void executeScript(String script, String source) {
+        executeScript(script, source, null, null);
+    }
+
+    /**
+     * Executes the given script string (literal javascript) with no target and messages the given executor if
+     * anything goes wrong.
+     *
+     * @param script The literal javascript to execute.
+     * @param source The source of the script.  This can be anything except null.  It is what will show up if errors
+     *               occur.
+     * @param executor the player to notify of errors.
+     */
+    public void executeScript(String script, String source, Player executor) {
+        executeScript(script, source, null, executor);
+    }
+
+    /**
+     * Executes the given script string (literal javascript) with the given target.
+     *
+     * @param script The literal javascript to execute.
+     * @param source The source of the script.  This can be anything except null.  It is what will show up if errors
+     *               occur.
+     * @param target the target of the script which is used to replace the string '%t' and is added in the global scope
+     *               as variable 'target'
+     */
+    public void executeScript(String script, String source, String target) {
+        executeScript(script, source, target, null);
+    }
+
+    /**
+     * Executes the given script string (literal javascript) with the specified target and messages the given executor
+     * if anything goes wrong.
+     *
+     * @param script The literal javascript to execute.
+     * @param source The source of the script.  This can be anything except null.  It is what will show up if errors
+     *               occur.
+     * @param target the target of the script which is used to replace the string '%t' and is added in the global scope
+     *               as variable 'target'
+     * @param executor the player to notify of errors.
+     */
+    public void executeScript(String script, String source, String target, Player executor) {
+        this.target = target;
+        runScript(script, source, executor);
         this.target = null;
         metaData.clear();
     }

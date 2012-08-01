@@ -18,6 +18,6 @@ class DefaultEventExecutor implements EventExecutor {
     @Override
     public void execute(Listener listener, Event event) throws EventException {
         buscript.getGlobalScope().put("event", buscript.getGlobalScope(), event);
-        buscript.runScript(buscript.getCachedScript(scriptFile), event.getEventName(), null);
+        buscript.executeScript(buscript.getCachedScript(scriptFile), event.getEventName(), null, null);
     }
 }
