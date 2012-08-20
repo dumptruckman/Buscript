@@ -380,7 +380,9 @@ public class Buscript {
      */
     public void addScriptMethods(Scriptable obj) {
         for (Method method : obj.getClass().getDeclaredMethods()) {
-            addScriptMethod(method.getName(), method, obj);
+            if (!method.getName().equals("getClassName")) {
+                addScriptMethod(method.getName(), method, obj);
+            }
         }
     }
 
