@@ -76,9 +76,11 @@ public class BuscriptPlugin extends JavaPlugin {
                     scriptFile.createNewFile();
                 }
             } catch (IOException e) {
-                getLogger().severe("Error creating script file: " + e.getMessage());
+                getLogger().severe("Error creating startup script file: " + e.getMessage());
                 getServer().getPluginManager().disablePlugin(this);
                 return null;
+            } catch (IllegalArgumentException e){
+                getLogger().info("Start up script not found in jar.");
             }
         }
         return scriptFile;
