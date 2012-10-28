@@ -8,6 +8,7 @@ import net.milkbowl.vault.chat.Chat;
 import net.milkbowl.vault.economy.Economy;
 import net.milkbowl.vault.permission.Permission;
 import org.bukkit.ChatColor;
+import org.bukkit.command.CommandSender;
 import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.configuration.file.YamlConfiguration;
@@ -21,6 +22,7 @@ import org.bukkit.plugin.Plugin;
 import org.bukkit.plugin.RegisteredListener;
 import org.bukkit.plugin.RegisteredServiceProvider;
 import org.mozilla.javascript.Context;
+import org.mozilla.javascript.Function;
 import org.mozilla.javascript.FunctionObject;
 import org.mozilla.javascript.Scriptable;
 
@@ -383,6 +385,92 @@ public class Buscript {
             if (!method.getName().equals("getClassName")) {
                 addScriptMethod(method.getName(), method, obj);
             }
+        }
+    }
+
+    /**
+     * Creates/sets a variable for use in the global scope.
+     *
+     * @param name The name of the variable which will be used in javascript as a "var".
+     * @param object Value for the variable.
+     */
+    public void setScriptVariable(String name, Object object) {
+        Context.enter();
+        try {
+            getGlobalScope().put(name, getGlobalScope(), object);
+        } finally {
+            Context.exit();
+        }
+    }
+
+    /**
+     * Obtains the value of a global scope variable.
+     *
+     * @param name The name of the javascript "var" to obtain.
+     * @return The value of the global variable which will follow the same guidelines as
+     * {@link Scriptable#get(String, org.mozilla.javascript.Scriptable)}.
+     */
+    public Object getScriptVariable(String name) {
+        Context.enter();
+        try {
+            return getGlobalScope().get(name, getGlobalScope());
+        } finally {
+            Context.exit();
+        }
+    }
+
+    /**
+     * Obtains the value of a global scope variable that will be automatically casted to the type parameter.  The type
+     * parameter may be limited by the confines of what
+     * {@link Scriptable#get(String, org.mozilla.javascript.Scriptable)} returns.
+     *
+     * @param name The name of the javascript "var" to obtain.
+     * @param type A class representing the type to cast the variable's value to.
+     * @param <T> The type represented by the type parameter.
+     * @return The value of of variable, automatically cast to the given type.  If unable to cast or value is null,
+     * null will be returned.
+     */
+    public <T> T getScriptVariable(String name, Class<T> type) {
+        try {
+            return type.cast(getScriptVariable(name));
+        } catch (ClassCastException e) {
+            return null;
+        } catch (NullPointerException e) {
+            return null;
+        }
+    }
+
+    /**
+     * Executes a javascript function.  The function must be declared in the scripting environment before this is
+     * called.
+     *
+     * @param obj - Scriptable object for use as the 'this' object in javascript.
+     * @param functionName The name of the javascript function.
+     * @param args - Arguments for the script function.
+     * @return The result of the function call.
+     * @throws InvocationTargetException if the calling of the function resulted in an exception.
+     * @throws FunctionNotFoundException if the named variable is not a function or its value is null.
+     */
+    public Object runScriptFunction(Scriptable obj, String functionName, Object... args)
+            throws InvocationTargetException, FunctionNotFoundException {
+        Object o = getScriptVariable(functionName);
+        if (o.equals(Scriptable.NOT_FOUND)) {
+            throw new FunctionNotFoundException("Variable '"+ functionName + "' not found!");
+        } else if (o.equals(Context.getUndefinedValue())) {
+            throw new FunctionNotFoundException("Variable '"+ functionName + "' is undefined!");
+        }
+        if(o instanceof Function){
+            Function f = (Function)o;
+            Context cx = Context.enter();
+            try {
+                return f.call(cx, getGlobalScope(), obj, args);
+            } catch (Exception e) {
+                throw new InvocationTargetException(e);
+            } finally {
+                Context.exit();
+            }
+        } else {
+            throw new FunctionNotFoundException("'" + functionName + "' is not a valid function!");
         }
     }
 
