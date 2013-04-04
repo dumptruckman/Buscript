@@ -8,7 +8,6 @@ import net.milkbowl.vault.chat.Chat;
 import net.milkbowl.vault.economy.Economy;
 import net.milkbowl.vault.permission.Permission;
 import org.bukkit.ChatColor;
-import org.bukkit.command.CommandSender;
 import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.configuration.file.YamlConfiguration;
@@ -87,12 +86,26 @@ public class Buscript {
     }
 
     /**
-     * Creates a new Buscript object, which is used to execute Javascript script files.  This object is not thread-safe
-     * so a new one should be created for each thread.
+     * Creates a new Buscript object, which is used to execute Javascript script files.
+     * <p/>
+     * This object is not thread-safe so a new one should be created for each thread.
+     * <p/>
+     * This constructor will automatically assign the variable name "plugin" to your plugin for script purposes.
      *
      * @param plugin The plugin implementing this library.
      */
     public Buscript(Plugin plugin) {
+        this(plugin, "plugin");
+    }
+
+    /**
+     * Creates a new Buscript object, which is used to execute Javascript script files.
+     * <p/>This object is not thread-safe so a new one should be created for each thread.
+     *
+     * @param plugin The plugin implementing this library.
+     * @param pluginScriptName The name of the variable the plugin will be referenced as in scripts.
+     */
+    public Buscript(Plugin plugin, String pluginScriptName) {
         this.plugin = plugin;
         registerStringReplacer(new TargetReplacer(this));
         // Create script folder in plugin's directory.
@@ -106,7 +119,7 @@ public class Buscript {
             global = cx.initStandardObjects();
             // Adds the current server instance as a script variable "server".
             global.put("server", global, plugin.getServer());
-            global.put("plugin", global, plugin);
+            global.put(pluginScriptName, global, plugin);
             global.put("metaData", global, metaData);
             global.put("NULL", global, NULL);
         } finally {
@@ -659,6 +672,7 @@ public class Buscript {
         try {
             Reader reader = null;
             try{
+
                 reader = new FileReader(script);
                 cx.evaluateReader(getGlobalScope(), reader, script.toString(), 1, null);
             } catch (Exception e) {
@@ -788,6 +802,7 @@ public class Buscript {
                 return;
             }
         }
+
         scriptCache.put(fileName, FileTools.readFileAsString(file, plugin.getLogger()));
     }
 
