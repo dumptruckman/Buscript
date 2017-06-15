@@ -20,12 +20,15 @@ import org.bukkit.plugin.EventExecutor;
 import org.bukkit.plugin.Plugin;
 import org.bukkit.plugin.RegisteredListener;
 import org.bukkit.plugin.RegisteredServiceProvider;
-import org.mozilla.javascript.Context;
-import org.mozilla.javascript.Function;
-import org.mozilla.javascript.FunctionObject;
-import org.mozilla.javascript.Scriptable;
 
+import javax.script.Bindings;
+import javax.script.Invocable;
+import javax.script.ScriptContext;
+import javax.script.ScriptEngine;
+import javax.script.ScriptEngineManager;
+import javax.script.ScriptException;
 import java.io.File;
+import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.IOException;
 import java.io.Reader;
@@ -41,15 +44,26 @@ public class Buscript {
 
     public static final String NULL = "!!NULL";
 
-    private String target = null;
     private Plugin plugin;
-    private Scriptable global;
+
+    private ScriptEngine scriptEngine = new ScriptEngineManager().getEngineByName("nashorn");
+    private Invocable invocable = (Invocable) scriptEngine;
+    private ScriptContext defaultContext = scriptEngine.getContext();
+    private Bindings engineBindings = defaultContext.getBindings(ScriptContext.ENGINE_SCOPE);
+
+    private Object globalObject;
+    private Object objectConstructor;
+
+    private String target = null;
+
     private Permission permissions;
     private Economy economy;
     private Chat chat;
+
     private File scriptFolder;
     private File scriptFile;
     private FileConfiguration scriptConfig;
+
     private Map<String, String> scriptCache = new HashMap<String, String>();
 
     private List<Map<String, Object>> delayedReplacements = null;
@@ -114,17 +128,21 @@ public class Buscript {
             getScriptFolder().mkdirs();
         }
         // Initialize the context with a global object.
-        Context cx = Context.enter();
         try {
-            global = cx.initStandardObjects();
-            // Adds the current server instance as a script variable "server".
-            global.put("server", global, plugin.getServer());
-            global.put(pluginScriptName, global, plugin);
-            global.put("metaData", global, metaData);
-            global.put("NULL", global, NULL);
-        } finally {
-            Context.exit();
+            globalObject = scriptEngine.eval("this");
+            objectConstructor = scriptEngine.eval("Object");
+        } catch (ScriptException e) {
+            e.printStackTrace();
+            plugin.getServer().getPluginManager().disablePlugin(plugin);
+            return;
         }
+
+        // Adds the current server instance as a script variable "server".
+        engineBindings.put("server", plugin.getServer());
+        engineBindings.put(pluginScriptName, plugin);
+        engineBindings.put("metaData", metaData);
+        engineBindings.put("NULL", NULL);
+
         // Adds all the default Buscript global methods.
         addScriptMethods(new DefaultFunctions(this));
         // Sets up permissions with vault.
@@ -201,14 +219,9 @@ public class Buscript {
 
     private void updateVaultInGlobalScope() {
         // Add vault to the script's global scope as variables.
-        Context.enter();
-        try {
-            global.put("permissions", global, permissions);
-            global.put("chat", global, chat);
-            global.put("economy", global, economy);
-        } finally {
-            Context.exit();
-        }
+        engineBindings.put("permissions", permissions);
+        engineBindings.put("chat", chat);
+        engineBindings.put("economy", economy);
     }
 
     void saveData() {
@@ -230,12 +243,13 @@ public class Buscript {
     }
 
     /**
-     * Retrieves the global scope object for this Buscript execution environment.
+     * Retrieves the global scope object for this Buscript execution environment. Equivalent to the global this object
+     * in JS.
      *
      * @return The global scope object for this Buscript execution environment.
      */
-    public Scriptable getGlobalScope() {
-        return global;
+    public Object getGlobalScope() {
+        return globalObject;
     }
 
     /**
@@ -356,48 +370,16 @@ public class Buscript {
     }
 
     /**
-     * Adds a global method to the script environment.  The arguments for the method must match the specifications of
-     * {@link FunctionObject#FunctionObject(String, java.lang.reflect.Member, org.mozilla.javascript.Scriptable)}
-     * Adding a method with the same name as an existing method may result in conflicts.
-     *
-     * @param name the name as the method should be in the script environment.
-     * @param method the java method to be linked.
-     * @param obj the Scriptable object that must contain the method.
-     */
-    public void addScriptMethod(String name, Method method, Scriptable obj) {
-        FunctionObject scriptMethod = new FunctionObject(name,
-                method, obj);
-        global.put(name, global, scriptMethod);
-    }
-
-    /**
-     * Adds all methods from the given obj to the global scope that match the names given in names.
-     *
-     *
-     * @param names The names of methods to add.
-     * @param obj The object containing these methods.
-     */
-    public void addScriptMethods(String[] names, Scriptable obj) {
-        for (Method method : obj.getClass().getDeclaredMethods()) {
-            for (String name : names) {
-                if (method.getName().equals(name)) {
-                    addScriptMethod(name, method, obj);
-                }
-            }
-        }
-    }
-
-    /**
      * Adds all methods from the given obj to the global scope.
      * Methods intended to be added should all have unique names or you may have conflicts.
      *
      * @param obj The object whose methods should be added.
      */
-    public void addScriptMethods(Scriptable obj) {
-        for (Method method : obj.getClass().getDeclaredMethods()) {
-            if (!method.getName().equals("getClassName")) {
-                addScriptMethod(method.getName(), method, obj);
-            }
+    public void addScriptMethods(Object obj) {
+        try {
+            invocable.invokeMethod(objectConstructor, "bindProperties", globalObject, obj);
+        } catch (ScriptException | NoSuchMethodException e) {
+            e.printStackTrace();
         }
     }
 
@@ -408,34 +390,21 @@ public class Buscript {
      * @param object Value for the variable.
      */
     public void setScriptVariable(String name, Object object) {
-        Context.enter();
-        try {
-            getGlobalScope().put(name, getGlobalScope(), object);
-        } finally {
-            Context.exit();
-        }
+        engineBindings.put(name, object);
     }
 
     /**
      * Obtains the value of a global scope variable.
      *
      * @param name The name of the javascript "var" to obtain.
-     * @return The value of the global variable which will follow the same guidelines as
-     * {@link Scriptable#get(String, org.mozilla.javascript.Scriptable)}.
+     * @return The value of the global variable of the given name.
      */
     public Object getScriptVariable(String name) {
-        Context.enter();
-        try {
-            return getGlobalScope().get(name, getGlobalScope());
-        } finally {
-            Context.exit();
-        }
+        return engineBindings.get(name);
     }
 
     /**
-     * Obtains the value of a global scope variable that will be automatically casted to the type parameter.  The type
-     * parameter may be limited by the confines of what
-     * {@link Scriptable#get(String, org.mozilla.javascript.Scriptable)} returns.
+     * Obtains the value of a global scope variable that will be automatically casted to the type parameter.
      *
      * @param name The name of the javascript "var" to obtain.
      * @param type A class representing the type to cast the variable's value to.
@@ -457,32 +426,19 @@ public class Buscript {
      * Executes a javascript function.  The function must be declared in the scripting environment before this is
      * called.
      *
-     * @param obj - Scriptable object for use as the 'this' object in javascript.
+     * @param obj - "Scope" object for use as the 'this' object in javascript.
      * @param functionName The name of the javascript function.
      * @param args - Arguments for the script function.
      * @return The result of the function call.
-     * @throws InvocationTargetException if the calling of the function resulted in an exception.
+     * @throws ScriptException if the calling of the function resulted in an exception.
      * @throws FunctionNotFoundException if the named variable is not a function or its value is null.
      */
-    public Object runScriptFunction(Scriptable obj, String functionName, Object... args)
-            throws InvocationTargetException, FunctionNotFoundException {
+    public Object runScriptFunction(Object obj, String functionName, Object... args)
+            throws FunctionNotFoundException, ScriptException {
         Object o = getScriptVariable(functionName);
-        if (o.equals(Scriptable.NOT_FOUND)) {
-            throw new FunctionNotFoundException("Variable '"+ functionName + "' not found!");
-        } else if (o.equals(Context.getUndefinedValue())) {
-            throw new FunctionNotFoundException("Variable '"+ functionName + "' is undefined!");
-        }
-        if(o instanceof Function){
-            Function f = (Function)o;
-            Context cx = Context.enter();
-            try {
-                return f.call(cx, getGlobalScope(), obj, args);
-            } catch (Exception e) {
-                throw new InvocationTargetException(e);
-            } finally {
-                Context.exit();
-            }
-        } else {
+        try {
+            return invocable.invokeMethod(obj, functionName, args);
+        } catch (NoSuchMethodException e) {
             throw new FunctionNotFoundException("'" + functionName + "' is not a valid function!");
         }
     }
@@ -651,77 +607,53 @@ public class Buscript {
 
     void runScript(String script, String source, Player executor) {
         setup();
-        Context cx = Context.enter();
         try {
-            try{
-                cx.evaluateString(getGlobalScope(), script, source, 1, null);
-            } catch (Exception e) {
-                getPlugin().getLogger().warning("Error running script: " + e.getMessage());
-                if (executor != null) {
-                    executor.sendMessage("Error running script: " + e.getMessage());
-                }
+            scriptEngine.eval(script);
+        } catch (ScriptException e) {
+            getPlugin().getLogger().warning("Error running script: " + e.getMessage());
+            if (executor != null) {
+                executor.sendMessage("Error running script: " + e.getMessage());
             }
-        } finally {
-            Context.exit();
         }
     }
 
     void runScript(File script, Player executor) {
         setup();
-        Context cx = Context.enter();
-        try {
-            Reader reader = null;
-            try{
-
-                reader = new FileReader(script);
-                cx.evaluateReader(getGlobalScope(), reader, script.toString(), 1, null);
-            } catch (Exception e) {
-                getPlugin().getLogger().warning("Error running script: " + e.getMessage());
-                if (executor != null) {
-                    executor.sendMessage("Error running script: " + e.getMessage());
-                }
-            } finally {
-                if (reader != null) {
-                    try {
-                        reader.close();
-                    } catch (IOException ignore) { }
-                }
+        try (Reader reader = new FileReader(script)){
+            scriptEngine.eval(reader);
+        } catch (ScriptException | IOException e) {
+            getPlugin().getLogger().warning("Error running script: " + e.getMessage());
+            if (executor != null) {
+                executor.sendMessage("Error running script: " + e.getMessage());
             }
-        } finally {
-            Context.exit();
         }
     }
 
     private void setup() {
-        Context cx = Context.enter();
-        try {
-            if (delayedReplacements != null) {
-                for (Map<String, Object> replacement : delayedReplacements) {
-                    Object var = replacement.get("var");
-                    Object replace = replacement.get("replace");
-                    if (var != null) {
-                        if (replace == null) {
-                            replace = NULL;
-                        }
-                        global.put(var.toString(), global, replace);
+        if (delayedReplacements != null) {
+            for (Map<String, Object> replacement : delayedReplacements) {
+                Object var = replacement.get("var");
+                Object replace = replacement.get("replace");
+                if (var != null) {
+                    if (replace == null) {
+                        replace = NULL;
                     }
-                }
-            } else {
-                for (StringReplacer r : stringReplacers) {
-                    String var = r.getGlobalVarName();
-                    String replace = r.getReplacement();
-                    if (var != null) {
-                        if (replace == null) {
-                            replace = NULL;
-                        }
-                        global.put(var, global, replace);
-                    }
+                    setScriptVariable(var.toString(), replace);
                 }
             }
-            global.put("metaData", global, metaData);
-        } finally {
-            Context.exit();
+        } else {
+            for (StringReplacer r : stringReplacers) {
+                String var = r.getGlobalVarName();
+                String replace = r.getReplacement();
+                if (var != null) {
+                    if (replace == null) {
+                        replace = NULL;
+                    }
+                    setScriptVariable(var, replace);
+                }
+            }
         }
+        setScriptVariable("metaData", metaData);
     }
 
     /**

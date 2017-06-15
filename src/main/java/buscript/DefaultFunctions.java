@@ -5,23 +5,15 @@ package buscript;
 
 import buscript.util.TimeTools;
 import org.bukkit.entity.Player;
-import org.bukkit.event.Event;
-import org.bukkit.event.EventPriority;
-import org.mozilla.javascript.ScriptableObject;
 
 import java.io.File;
 
-class DefaultFunctions extends ScriptableObject {
+class DefaultFunctions {
 
     private Buscript buscript;
 
     DefaultFunctions(Buscript buscript) {
         this.buscript = buscript;
-    }
-
-    @Override
-    public String getClassName() {
-        return "Buscript";
     }
 
     public void broadcast(String message) {
