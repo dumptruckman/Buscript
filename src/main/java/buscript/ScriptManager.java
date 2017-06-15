@@ -31,8 +31,8 @@ public class ScriptManager {
     private ScriptContext defaultContext = scriptEngine.getContext();
     private Bindings engineBindings = defaultContext.getBindings(ScriptContext.ENGINE_SCOPE);
 
-    private Object globalObject;
-    private Object objectConstructor;
+    Object globalObject;
+    Object objectConstructor;
 
     private String target = null;
 
@@ -269,13 +269,14 @@ public class ScriptManager {
         }
     }
 
-    void executeDelayedScript(File scriptFile, List<Map<String, Object>> replacements, Map<String, Object> data) {
+    Object executeDelayedScript(File scriptFile, List<Map<String, Object>> replacements, Map<String, Object> data) {
         if (data != null) {
             metaData = data;
         }
         delayedReplacements = replacements;
-        executeScript(scriptFile, null, null);
+        Object res = executeScript(scriptFile, null, null);
         delayedReplacements = null;
+        return res;
     }
 
     /**
@@ -283,8 +284,8 @@ public class ScriptManager {
      *
      * @param scriptFile The file to execute.
      */
-    public void executeScript(File scriptFile) {
-        executeScript(scriptFile, null, null);
+    public Object executeScript(File scriptFile) {
+        return executeScript(scriptFile, null, null);
     }
 
     /**
@@ -293,8 +294,8 @@ public class ScriptManager {
      * @param scriptFile the file to execute.
      * @param executor the executor to notify of errors.
      */
-    public void executeScript(File scriptFile, ScriptExecutor executor) {
-        executeScript(scriptFile, null, executor);
+    public Object executeScript(File scriptFile, ScriptExecutor executor) {
+        return executeScript(scriptFile, null, executor);
     }
 
     /**
@@ -304,8 +305,8 @@ public class ScriptManager {
      * @param target the target of the script which is used to replace the string '%t' and is added in the global scope
      *               as variable 'target'
      */
-    public void executeScript(File scriptFile, String target) {
-        executeScript(scriptFile, target, null);
+    public Object executeScript(File scriptFile, String target) {
+        return executeScript(scriptFile, target, null);
     }
 
     /**
@@ -316,11 +317,12 @@ public class ScriptManager {
      *               as variable 'target'
      * @param executor the executor to notify of errors.
      */
-    public void executeScript(File scriptFile, String target, ScriptExecutor executor) {
+    public Object executeScript(File scriptFile, String target, ScriptExecutor executor) {
         this.target = target;
-        runScript(scriptFile, executor);
+        Object res = runScript(scriptFile, executor);
         this.target = null;
         metaData.clear();
+        return res;
     }
 
     /**
@@ -330,8 +332,8 @@ public class ScriptManager {
      * @param source The source of the script.  This can be anything except null.  It is what will show up if errors
      *               occur.
      */
-    public void executeScript(String script, String source) {
-        executeScript(script, source, null, null);
+    public Object executeScript(String script, String source) {
+        return executeScript(script, source, null, null);
     }
 
     /**
@@ -343,8 +345,8 @@ public class ScriptManager {
      *               occur.
      * @param executor the executor to notify of errors.
      */
-    public void executeScript(String script, String source, ScriptExecutor executor) {
-        executeScript(script, source, null, executor);
+    public Object executeScript(String script, String source, ScriptExecutor executor) {
+        return executeScript(script, source, null, executor);
     }
 
     /**
@@ -356,8 +358,8 @@ public class ScriptManager {
      * @param target the target of the script which is used to replace the string '%t' and is added in the global scope
      *               as variable 'target'
      */
-    public void executeScript(String script, String source, String target) {
-        executeScript(script, source, target, null);
+    public Object executeScript(String script, String source, String target) {
+        return executeScript(script, source, target, null);
     }
 
     /**
@@ -371,34 +373,37 @@ public class ScriptManager {
      *               as variable 'target'
      * @param executor the executor to notify of errors.
      */
-    public void executeScript(String script, String source, String target, ScriptExecutor executor) {
+    public Object executeScript(String script, String source, String target, ScriptExecutor executor) {
         this.target = target;
-        runScript(script, source, executor);
+        Object res = runScript(script, executor);
         this.target = null;
         metaData.clear();
+        return res;
     }
 
-    void runScript(String script, String source, ScriptExecutor executor) {
+    Object runScript(String script, ScriptExecutor executor) {
         setup();
         try {
-            scriptEngine.eval(script);
+            return scriptEngine.eval(script);
         } catch (ScriptException e) {
             getLogger().warning("Error running script: " + e.getMessage());
             if (executor != null) {
                 executor.sendMessage("Error running script: " + e.getMessage());
             }
+            return null;
         }
     }
 
-    void runScript(File script, ScriptExecutor executor) {
+    Object runScript(File script, ScriptExecutor executor) {
         setup();
         try (Reader reader = new FileReader(script)){
-            scriptEngine.eval(reader);
+            return scriptEngine.eval(reader);
         } catch (ScriptException | IOException e) {
             getLogger().warning("Error running script: " + e.getMessage());
             if (executor != null) {
                 executor.sendMessage("Error running script: " + e.getMessage());
             }
+            return null;
         }
     }
 
