@@ -142,6 +142,8 @@ public class ScriptManager {
      * their replacement string and returns the result.  By default this includes a replacement of %t with the script's
      * current target.  This will also replace '&amp;' with the appropriate color character.
      *
+     * Note: This ONLY works correctly when used from within a script function.
+     *
      * @param string The string to replace in.
      * @return The string that has had replacements for each registered StringReplacer.
      */

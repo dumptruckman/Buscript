@@ -20,6 +20,7 @@ public class ScriptManagerTest {
     public void setUp() throws Exception {
         sm = new ScriptManager(Files.createTempDirectory("scripts").toFile(),
                 Logger.getLogger("ScriptManagerTest"));
+        sm.addScriptMethods(new TestMethods(sm));
     }
 
     @Test
@@ -38,13 +39,29 @@ public class ScriptManagerTest {
 
     @Test
     public void testGlobalMethods() {
-        sm.addScriptMethods(new TestMethods());
         assertEquals(5, sm.runScript("add(2, 3)", null));
     }
 
+    @Test
+    public void testTargetedScript() {
+        assertEquals("Test", sm.executeScript("var name = target; name", null, "Test"));
+    }
+
+    @Test
+    public void testTargetReplacementScript() {
+        assertEquals("Test", sm.executeScript(sm.stringReplace("testReplace()"), null, "Test"));
+    }
+
     public static class TestMethods {
+        ScriptManager sm;
+        TestMethods(ScriptManager sm) {
+            this.sm = sm;
+        }
         public int add(int a, int b) {
             return a + b;
+        }
+        public String testReplace() {
+            return sm.stringReplace("%target%");
         }
     }
 }
