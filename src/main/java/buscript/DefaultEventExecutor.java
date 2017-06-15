@@ -1,5 +1,6 @@
 package buscript;
 
+import org.bukkit.entity.Player;
 import org.bukkit.event.Event;
 import org.bukkit.event.EventException;
 import org.bukkit.event.Listener;
@@ -18,6 +19,6 @@ class DefaultEventExecutor implements EventExecutor {
     @Override
     public void execute(Listener listener, Event event) throws EventException {
         buscript.setScriptVariable("event", event);
-        buscript.executeScript(buscript.getCachedScript(scriptFile), event.getEventName(), null, null);
+        buscript.executeScript(buscript.getCachedScript(scriptFile), event.getEventName(), null, (Player) null);
     }
 }

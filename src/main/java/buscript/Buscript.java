@@ -207,6 +207,22 @@ public class Buscript extends ScriptManager {
         return chat;
     }
 
+    public Object executeScript(File scriptFile, Player executor) {
+        return super.executeScript(scriptFile, new BukkitScriptExecutor(executor));
+    }
+
+    public Object executeScript(File scriptFile, String target, Player executor) {
+        return super.executeScript(scriptFile, target, new BukkitScriptExecutor(executor));
+    }
+
+    public Object executeScript(String script, String source, Player executor) {
+        return super.executeScript(script, source, new BukkitScriptExecutor(executor));
+    }
+
+    public Object executeScript(String script, String source, String target, Player executor) {
+        return super.executeScript(script, source, target, new BukkitScriptExecutor(executor));
+    }
+
     /**
      * Schedules a script to be run at a later time as specified by delay with no specified target.
      *
