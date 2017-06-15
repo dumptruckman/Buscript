@@ -101,10 +101,8 @@ public class Buscript {
 
     /**
      * Creates a new Buscript object, which is used to execute Javascript script files.
-     * <p/>
-     * This object is not thread-safe so a new one should be created for each thread.
-     * <p/>
-     * This constructor will automatically assign the variable name "plugin" to your plugin for script purposes.
+     * <p>This object is not thread-safe so a new one should be created for each thread.</p>
+     * <p>This constructor will automatically assign the variable name "plugin" to your plugin for script purposes.</p>
      *
      * @param plugin The plugin implementing this library.
      */
@@ -114,7 +112,8 @@ public class Buscript {
 
     /**
      * Creates a new Buscript object, which is used to execute Javascript script files.
-     * <p/>This object is not thread-safe so a new one should be created for each thread.
+     *
+     * <p>This object is not thread-safe so a new one should be created for each thread.</p>
      *
      * @param plugin The plugin implementing this library.
      * @param pluginScriptName The name of the variable the plugin will be referenced as in scripts.
@@ -314,7 +313,7 @@ public class Buscript {
     /**
      * Loops through all StringReplacers registered with this Buscript object and replaces their regex strings with
      * their replacement string and returns the result.  By default this includes a replacement of %t with the script's
-     * current target.  This will also replace '&' with the appropriate color character.
+     * current target.  This will also replace '&amp;' with the appropriate color character.
      *
      * @param string The string to replace in.
      * @return The string that has had replacements for each registered StringReplacer.
