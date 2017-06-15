@@ -4,138 +4,142 @@
 package buscript;
 
 import buscript.util.TimeTools;
+import net.milkbowl.vault.economy.Economy;
+import net.milkbowl.vault.permission.Permission;
 import org.bukkit.entity.Player;
-import org.bukkit.event.Event;
-import org.bukkit.event.EventPriority;
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 import org.mozilla.javascript.ScriptableObject;
 
 import java.io.File;
 
 class DefaultFunctions extends ScriptableObject {
 
-    private Buscript buscript;
+    @NotNull
+    private final Buscript buscript;
 
-    DefaultFunctions(Buscript buscript) {
+    DefaultFunctions(@NotNull final Buscript buscript) {
         this.buscript = buscript;
     }
 
     @Override
+    @NotNull
     public String getClassName() {
-        return "Buscript";
+        return "DefaultFunctions";
     }
 
-    public void broadcast(String message) {
-        buscript.getPlugin().getServer().broadcastMessage(buscript.stringReplace(message));
+    public void broadcast(@NotNull final String message) {
+        buscript.getPlugin().getServer().broadcastMessage(message);
     }
 
-    public void broadcastPerm(String message, String permission) {
-        buscript.getPlugin().getServer().broadcast(buscript.stringReplace(message), permission);
+    public void broadcastPerm(@NotNull final String message, @NotNull final String permission) {
+        buscript.getPlugin().getServer().broadcast(message, permission);
     }
 
-    public void command(String command) {
-        buscript.getPlugin().getServer().dispatchCommand(buscript.getPlugin().getServer().getConsoleSender(), buscript.stringReplace(command));
+    public void command(@NotNull final String command) {
+        buscript.getPlugin().getServer().dispatchCommand(buscript.getPlugin().getServer().getConsoleSender(), command);
     }
 
-    public void commandSpoof(String name, String command) {
-        Player player = buscript.getPlugin().getServer().getPlayerExact(buscript.stringReplace(name));
+    public void commandSpoof(@NotNull final String name, @NotNull final String command) {
+        Player player = buscript.getPlugin().getServer().getPlayerExact(name);
         if (player != null) {
-            buscript.getPlugin().getServer().dispatchCommand(player, buscript.stringReplace(command));
+            buscript.getPlugin().getServer().dispatchCommand(player, command);
         }
     }
 
-    public void message(String name, String message) {
-        Player player = buscript.getPlugin().getServer().getPlayerExact(buscript.stringReplace(name));
+    public void message(@NotNull final String name, @NotNull final String message) {
+        Player player = buscript.getPlugin().getServer().getPlayerExact(name);
         if (player != null) {
-            player.sendMessage(buscript.stringReplace(message));
+            player.sendMessage(message);
         }
     }
 
-    public boolean hasPerm(String name, String permission) {
-        Player player = buscript.getPlugin().getServer().getPlayerExact(buscript.stringReplace(name));
+    public boolean hasPerm(@NotNull final String name, @NotNull final String permission) {
+        Player player = buscript.getPlugin().getServer().getPlayerExact(name);
         return player != null && player.hasPermission(permission);
     }
 
-    public boolean hasPermOffline(String world, String player, String permission) {
-        if (buscript.getPermissions() != null) {
-            return buscript.getPermissions().has(world, buscript.stringReplace(player), permission);
+    public boolean hasPermOffline(@NotNull final String world, @NotNull final String player, @NotNull final String permission) {
+        final Permission permissions = buscript.getPermissions();
+        if (permissions != null) {
+            return permissions.has(world, player, permission);
         } else {
             throw new IllegalStateException("Vault must be installed to use hasPermOffline(world, player, perm)!");
         }
     }
 
-    public void addPerm(String world, String player, String permission) {
-        if (buscript.getPermissions() != null) {
-            buscript.getPermissions().playerAdd(world, buscript.stringReplace(player), permission);
+    public void addPerm(@NotNull final String world, @NotNull final String player, @NotNull final String permission) {
+        final Permission permissions = buscript.getPermissions();
+        if (permissions != null) {
+            permissions.playerAdd(world, player, permission);
         } else {
             throw new IllegalStateException("Vault must be installed to use addPerm(world, player, perm)!");
         }
     }
 
-    public void removePerm(String world, String player, String permission) {
-        if (buscript.getPermissions() != null) {
-            buscript.getPermissions().playerRemove(world, buscript.stringReplace(player), permission);
+    public void removePerm(@NotNull final String world, @NotNull final String player, @NotNull final String permission) {
+        final Permission permissions = buscript.getPermissions();
+        if (permissions != null) {
+            permissions.playerRemove(world, player, permission);
         } else {
             throw new IllegalStateException("Vault must be installed to use removePerm(world, player, perm)!");
         }
     }
 
-    public boolean hasMoney(String player, Double money) {
-        if (buscript.getEconomy() != null) {
-            return buscript.getEconomy().has(buscript.stringReplace(player), money);
+    public boolean hasMoney(@NotNull final String player, @NotNull final Double money) {
+        final Economy economy = buscript.getEconomy();
+        if (economy != null) {
+            return economy.has(player, money);
         } else {
             throw new IllegalStateException("Vault must be installed to use hasMoney(player, money)!");
         }
     }
 
-    public boolean addMoney(String player, Double money) {
-        if (buscript.getEconomy() != null) {
-            return buscript.getEconomy().depositPlayer(buscript.stringReplace(player), money).transactionSuccess();
+    public boolean addMoney(@NotNull final String player, @NotNull final Double money) {
+        final Economy economy = buscript.getEconomy();
+        if (economy != null) {
+            return economy.depositPlayer(player, money).transactionSuccess();
         } else {
             throw new IllegalStateException("Vault must be installed to use addMoney(player, money)!");
         }
     }
 
-    public boolean removeMoney(String player, Double money) {
-        if (buscript.getEconomy() != null) {
-            return buscript.getEconomy().withdrawPlayer(buscript.stringReplace(player), money).transactionSuccess();
+    public boolean removeMoney(@NotNull final String player, @NotNull final Double money) {
+        final Economy economy = buscript.getEconomy();
+        if (economy != null) {
+            return economy.withdrawPlayer(player, money).transactionSuccess();
         } else {
             throw new IllegalStateException("Vault must be installed to use removeMoney(player, money)!");
         }
     }
 
-    public boolean isOnline(String name) {
-        return buscript.getPlugin().getServer().getPlayerExact(buscript.stringReplace(name)) != null;
+    public boolean isOnline(@NotNull final String name) {
+        return buscript.getPlugin().getServer().getPlayerExact(name) != null;
     }
 
-    public void run(String script) {
-        buscript.executeScript(new File(buscript.getScriptFolder(), buscript.stringReplace(script)));
+    public void run(@NotNull final String script) {
+        buscript.executeScript(new File(buscript.getScriptFolder(), script));
     }
 
-    public void runTarget(String script, String target) {
-        buscript.executeScript(new File(buscript.getScriptFolder(), buscript.stringReplace(script)),
-                buscript.stringReplace(target));
+    public void runTarget(@NotNull final String script, final String target) {
+        buscript.executeScript(new File(buscript.getScriptFolder(), script), target);
     }
 
-    public void runLater(String script, String delay) {
+    public void runLater(@NotNull final String script, @NotNull final String delay) {
         long d = TimeTools.fromShortForm(delay);
-        buscript.scheduleScript(new File(buscript.getScriptFolder(), buscript.stringReplace(script)), d * 1000);
+        buscript.scheduleScript(new File(buscript.getScriptFolder(), script), d * 1000);
     }
 
-    public void runLaterTarget(String script, String delay, String target) {
+    public void runLaterTarget(@NotNull final String script, @NotNull final String delay, final String target) {
         long d = TimeTools.fromShortForm(delay);
-        buscript.scheduleScript(new File(buscript.getScriptFolder(), buscript.stringReplace(script)),
-                buscript.stringReplace(target), d * 1000);
+        buscript.scheduleScript(new File(buscript.getScriptFolder(), script), target, d * 1000);
     }
 
-    public void clearScripts(String target) {
+    public void clearScripts(final String target) {
         buscript.clearScheduledScripts(target);
     }
 
-    public String stringReplace(String string) {
-        return buscript.stringReplace(string);
-    }
-
-    public void registerEvent(String event, String priority, String script) {
+    public void registerEvent(@NotNull final String event, @NotNull final String priority, @NotNull final String script) {
         buscript.registerEventScript(event, priority, new File(buscript.getScriptFolder(), script));
     }
 }

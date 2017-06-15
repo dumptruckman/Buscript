@@ -7,12 +7,14 @@ import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.server.PluginDisableEvent;
 import org.bukkit.event.server.PluginEnableEvent;
+import org.jetbrains.annotations.NotNull;
 
 public class VaultListener implements Listener {
 
+    @NotNull
     private Buscript buscript;
 
-    public VaultListener(Buscript buscript) {
+    public VaultListener(@NotNull final Buscript buscript) {
         this.buscript = buscript;
     }
 
@@ -23,7 +25,7 @@ public class VaultListener implements Listener {
      * @param event event thrown when a plugin is enabled.
      */
     @EventHandler
-    public void pluginEnable(PluginEnableEvent event) {
+    public void pluginEnable(@NotNull final PluginEnableEvent event) {
         if (event.getPlugin().getName().equals("Vault")) {
             buscript.setupVault();
         }
@@ -35,7 +37,7 @@ public class VaultListener implements Listener {
      * @param event event thrown when a plugin is disabled.
      */
     @EventHandler
-    public void pluginDisable(PluginDisableEvent event) {
+    public void pluginDisable(@NotNull final PluginDisableEvent event) {
         if (event.getPlugin().getName().equals("Vault")) {
             buscript.disableVault();
         }

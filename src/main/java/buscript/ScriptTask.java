@@ -52,12 +52,11 @@ class ScriptTask implements Runnable {
                                 final File scriptFile = new File(script.get("file").toString());
                                 if (scriptFile.exists()) {
                                     try {
-                                        final List<Map<String, Object>> replacements = (List<Map<String, Object>>) script.get("replacements");
                                         final Map<String, Object> metaData = (Map<String, Object>) script.get("metaData");
                                         buscript.getPlugin().getServer().getScheduler().scheduleSyncDelayedTask(plugin, new Runnable() {
                                             @Override
                                             public void run() {
-                                                buscript.executeDelayedScript(scriptFile, replacements, metaData);
+                                                buscript.executeDelayedScript(scriptFile, metaData);
                                             }
                                         });
                                         scriptsIt.remove();
@@ -73,12 +72,11 @@ class ScriptTask implements Runnable {
                                     } catch (IOException ignore) { }
                                     if (scriptFile.exists()) {
                                         try {
-                                            final List<Map<String, Object>> replacements = (List<Map<String, Object>>) script.get("replacements");
                                             final Map<String, Object> metaData = (Map<String, Object>) script.get("metaData");
                                             buscript.getPlugin().getServer().getScheduler().scheduleSyncDelayedTask(plugin, new Runnable() {
                                                 @Override
                                                 public void run() {
-                                                    buscript.executeDelayedScript(scriptFile, replacements, metaData);
+                                                    buscript.executeDelayedScript(scriptFile, metaData);
                                                 }
                                             });
                                             scriptsIt.remove();
@@ -112,6 +110,9 @@ class ScriptTask implements Runnable {
                 }
             }
             if (removed) {
+                if (allScriptsIt.hasNext()) {
+                    allScriptsIt
+                }
                 buscript.saveData();
             }
         }

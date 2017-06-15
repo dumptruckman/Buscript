@@ -4,20 +4,23 @@ import org.bukkit.event.Event;
 import org.bukkit.event.EventException;
 import org.bukkit.event.Listener;
 import org.bukkit.plugin.EventExecutor;
+import org.jetbrains.annotations.NotNull;
 
 class DefaultEventExecutor implements EventExecutor {
 
-    Buscript buscript;
-    String scriptFile;
+    @NotNull
+    final Buscript buscript;
+    @NotNull
+    final String scriptFile;
 
-    DefaultEventExecutor(Buscript buscript, String scriptFile) {
+    DefaultEventExecutor(@NotNull final Buscript buscript, @NotNull final String scriptFile) {
         this.buscript = buscript;
         this.scriptFile = scriptFile;
     }
 
     @Override
-    public void execute(Listener listener, Event event) throws EventException {
+    public void execute(final Listener listener, final Event event) throws EventException {
         buscript.getGlobalScope().put("event", buscript.getGlobalScope(), event);
-        buscript.executeScript(buscript.getCachedScript(scriptFile), event.getEventName(), null, null);
+        buscript.executeScript(scriptFile, event.getEventName(), null, null);
     }
 }
