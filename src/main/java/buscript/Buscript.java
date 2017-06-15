@@ -40,64 +40,19 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 
-public class Buscript {
-
-    public static final String NULL = "!!NULL";
+public class Buscript extends ScriptManager {
 
     private Plugin plugin;
-
-    private ScriptEngine scriptEngine = new ScriptEngineManager().getEngineByName("nashorn");
-    private Invocable invocable = (Invocable) scriptEngine;
-    private ScriptContext defaultContext = scriptEngine.getContext();
-    private Bindings engineBindings = defaultContext.getBindings(ScriptContext.ENGINE_SCOPE);
-
-    private Object globalObject;
-    private Object objectConstructor;
-
-    private String target = null;
 
     private Permission permissions;
     private Economy economy;
     private Chat chat;
 
-    private File scriptFolder;
     private File scriptFile;
     private FileConfiguration scriptConfig;
 
-    private Map<String, String> scriptCache = new HashMap<String, String>();
-
-    private List<Map<String, Object>> delayedReplacements = null;
-
-    private final List<StringReplacer> stringReplacers = new ArrayList<StringReplacer>();
-
-    private Map<String, Object> metaData = new HashMap<String, Object>();
-
     boolean runTasks = true;
     Map<String, List<Map<String, Object>>> delayedScripts = new HashMap<String, List<Map<String, Object>>>();
-
-    private static class TargetReplacer implements StringReplacer {
-
-        private Buscript buscript;
-
-        private TargetReplacer(Buscript buscript) {
-            this.buscript = buscript;
-        }
-
-        @Override
-        public String getRegexString() {
-            return "%target%";
-        }
-
-        @Override
-        public String getReplacement() {
-            return buscript.getTarget();
-        }
-
-        @Override
-        public String getGlobalVarName() {
-            return "target";
-        }
-    }
 
     /**
      * Creates a new Buscript object, which is used to execute Javascript script files.
@@ -119,28 +74,12 @@ public class Buscript {
      * @param pluginScriptName The name of the variable the plugin will be referenced as in scripts.
      */
     public Buscript(Plugin plugin, String pluginScriptName) {
+        super(new File(plugin.getDataFolder(), "scripts"), plugin.getLogger());
         this.plugin = plugin;
-        registerStringReplacer(new TargetReplacer(this));
-        // Create script folder in plugin's directory.
-        scriptFolder = new File(plugin.getDataFolder(), "scripts");
-        if (!getScriptFolder().exists()) {
-            getScriptFolder().mkdirs();
-        }
-        // Initialize the context with a global object.
-        try {
-            globalObject = scriptEngine.eval("this");
-            objectConstructor = scriptEngine.eval("Object");
-        } catch (ScriptException e) {
-            e.printStackTrace();
-            plugin.getServer().getPluginManager().disablePlugin(plugin);
-            return;
-        }
 
         // Adds the current server instance as a script variable "server".
-        engineBindings.put("server", plugin.getServer());
-        engineBindings.put(pluginScriptName, plugin);
-        engineBindings.put("metaData", metaData);
-        engineBindings.put("NULL", NULL);
+        setScriptVariable("server", plugin.getServer());
+        setScriptVariable(pluginScriptName, plugin);
 
         // Adds all the default Buscript global methods.
         addScriptMethods(new DefaultFunctions(this));
@@ -218,9 +157,9 @@ public class Buscript {
 
     private void updateVaultInGlobalScope() {
         // Add vault to the script's global scope as variables.
-        engineBindings.put("permissions", permissions);
-        engineBindings.put("chat", chat);
-        engineBindings.put("economy", economy);
+        setScriptVariable("permissions", permissions);
+        setScriptVariable("chat", chat);
+        setScriptVariable("economy", economy);
     }
 
     void saveData() {
@@ -239,16 +178,6 @@ public class Buscript {
      */
     public Plugin getPlugin() {
         return plugin;
-    }
-
-    /**
-     * Retrieves the global scope object for this Buscript execution environment. Equivalent to the global this object
-     * in JS.
-     *
-     * @return The global scope object for this Buscript execution environment.
-     */
-    public Object getGlobalScope() {
-        return globalObject;
     }
 
     /**
@@ -276,279 +205,6 @@ public class Buscript {
      */
     public Chat getChat() {
         return chat;
-    }
-
-    /**
-     * Gets the current script target.  This may return null if the script is not set to execute on a target.
-     * This only updates immediately preceding a script's execution.
-     *
-     * @return The current script target or null.
-     */
-    public String getTarget() {
-        return target;
-    }
-
-    /**
-     * Returns the folder that all scripts will launch from when defined to launch from within a script.
-     *
-     * @return The folder that all scripts will launch from when defined to launch from within a script.
-     */
-    public File getScriptFolder() {
-        return scriptFolder;
-    }
-
-    /**
-     * Allows the folder that all scripts will launch from when defined to launch from within a script to be
-     * changed.
-     *
-     * @param folder The new folder that said scripts should launch from.
-     */
-    public void setScriptFolder(File folder) {
-        if (!folder.isDirectory()) {
-            throw new IllegalArgumentException("folder must be a directory!");
-        }
-        this.scriptFolder = folder;
-    }
-
-    /**
-     * Loops through all StringReplacers registered with this Buscript object and replaces their regex strings with
-     * their replacement string and returns the result.  By default this includes a replacement of %t with the script's
-     * current target.  This will also replace '&amp;' with the appropriate color character.
-     *
-     * @param string The string to replace in.
-     * @return The string that has had replacements for each registered StringReplacer.
-     */
-    public String stringReplace(String string) {
-        if (string == null) {
-            throw new IllegalArgumentException("string must not be null");
-        }
-        String result = string;
-        if (delayedReplacements != null) {
-            for (Map<String, Object> replacement : delayedReplacements) {
-                Object regex = replacement.get("regex");
-                Object replace = replacement.get("replace");
-                if (regex != null) {
-                    if (replace == null) {
-                        replace = NULL;
-                    }
-                    result = result.replaceAll(regex.toString(), replace.toString());
-                }
-            }
-        } else {
-            for (StringReplacer r : stringReplacers) {
-                String regex = r.getRegexString();
-                if (regex == null) {
-                    continue;
-                }
-                String replace = r.getReplacement();
-                if (replace == null) {
-                    replace = NULL;
-                }
-                result = result.replaceAll(regex, replace);
-            }
-        }
-        result = ChatColor.translateAlternateColorCodes('&', result);
-        return result;
-    }
-
-    /**
-     * Adds a new {@link StringReplacer} to this Buscript instance which will allow built in global script functions
-     * to replace strings as defined by the replacer.
-     *
-     * @param replacer the new StringReplacer to add.
-     */
-    public void registerStringReplacer(StringReplacer replacer) {
-        Iterator<StringReplacer> it = stringReplacers.iterator();
-        while (it.hasNext()) {
-            StringReplacer r = it.next();
-            if (r.getRegexString().equals(replacer.getRegexString())) {
-                it.remove();
-            }
-        }
-        stringReplacers.add(replacer);
-    }
-
-    /**
-     * Adds all methods from the given obj to the global scope.
-     * Methods intended to be added should all have unique names or you may have conflicts.
-     *
-     * @param obj The object whose methods should be added.
-     */
-    public void addScriptMethods(Object obj) {
-        try {
-            invocable.invokeMethod(objectConstructor, "bindProperties", globalObject, obj);
-        } catch (ScriptException | NoSuchMethodException e) {
-            e.printStackTrace();
-        }
-    }
-
-    /**
-     * Creates/sets a variable for use in the global scope.
-     *
-     * @param name The name of the variable which will be used in javascript as a "var".
-     * @param object Value for the variable.
-     */
-    public void setScriptVariable(String name, Object object) {
-        engineBindings.put(name, object);
-    }
-
-    /**
-     * Obtains the value of a global scope variable.
-     *
-     * @param name The name of the javascript "var" to obtain.
-     * @return The value of the global variable of the given name.
-     */
-    public Object getScriptVariable(String name) {
-        return engineBindings.get(name);
-    }
-
-    /**
-     * Obtains the value of a global scope variable that will be automatically casted to the type parameter.
-     *
-     * @param name The name of the javascript "var" to obtain.
-     * @param type A class representing the type to cast the variable's value to.
-     * @param <T> The type represented by the type parameter.
-     * @return The value of of variable, automatically cast to the given type.  If unable to cast or value is null,
-     * null will be returned.
-     */
-    public <T> T getScriptVariable(String name, Class<T> type) {
-        try {
-            return type.cast(getScriptVariable(name));
-        } catch (ClassCastException e) {
-            return null;
-        } catch (NullPointerException e) {
-            return null;
-        }
-    }
-
-    /**
-     * Executes a javascript function.  The function must be declared in the scripting environment before this is
-     * called.
-     *
-     * @param obj - "Scope" object for use as the 'this' object in javascript.
-     * @param functionName The name of the javascript function.
-     * @param args - Arguments for the script function.
-     * @return The result of the function call.
-     * @throws ScriptException if the calling of the function resulted in an exception.
-     * @throws FunctionNotFoundException if the named variable is not a function or its value is null.
-     */
-    public Object runScriptFunction(Object obj, String functionName, Object... args)
-            throws FunctionNotFoundException, ScriptException {
-        Object o = getScriptVariable(functionName);
-        try {
-            return invocable.invokeMethod(obj, functionName, args);
-        } catch (NoSuchMethodException e) {
-            throw new FunctionNotFoundException("'" + functionName + "' is not a valid function!");
-        }
-    }
-
-    void executeDelayedScript(File scriptFile, List<Map<String, Object>> replacements, Map<String, Object> data) {
-        if (data != null) {
-            metaData = data;
-        }
-        delayedReplacements = replacements;
-        executeScript(scriptFile, null, null);
-        delayedReplacements = null;
-    }
-
-    /**
-     * Executes the given scriptFile with no target.
-     *
-     * @param scriptFile The file to execute.
-     */
-    public void executeScript(File scriptFile) {
-        executeScript(scriptFile, null, null);
-    }
-
-    /**
-     * Executes the given scriptFile with no target and messages the given executor if anything goes wrong.
-     *
-     * @param scriptFile the file to execute.
-     * @param executor the player to notify of errors.
-     */
-    public void executeScript(File scriptFile, Player executor) {
-        executeScript(scriptFile, null, executor);
-    }
-
-    /**
-     * Executes the given scriptFile with the given target.
-     *
-     * @param scriptFile the file to execute.
-     * @param target the target of the script which is used to replace the string '%t' and is added in the global scope
-     *               as variable 'target'
-     */
-    public void executeScript(File scriptFile, String target) {
-        executeScript(scriptFile, target, null);
-    }
-
-    /**
-     * Executes the given scriptFile with the specified target and messages the given executor if anything goes wrong.
-     *
-     * @param scriptFile the file to execute.
-     * @param target the target of the script which is used to replace the string '%t' and is added in the global scope
-     *               as variable 'target'
-     * @param executor the player to notify of errors.
-     */
-    public void executeScript(File scriptFile, String target, Player executor) {
-        this.target = target;
-        runScript(scriptFile, executor);
-        this.target = null;
-        metaData.clear();
-    }
-
-    /**
-     * Executes the given script string (literal javascript) with no target.
-     *
-     * @param script The literal javascript to execute.
-     * @param source The source of the script.  This can be anything except null.  It is what will show up if errors
-     *               occur.
-     */
-    public void executeScript(String script, String source) {
-        executeScript(script, source, null, null);
-    }
-
-    /**
-     * Executes the given script string (literal javascript) with no target and messages the given executor if
-     * anything goes wrong.
-     *
-     * @param script The literal javascript to execute.
-     * @param source The source of the script.  This can be anything except null.  It is what will show up if errors
-     *               occur.
-     * @param executor the player to notify of errors.
-     */
-    public void executeScript(String script, String source, Player executor) {
-        executeScript(script, source, null, executor);
-    }
-
-    /**
-     * Executes the given script string (literal javascript) with the given target.
-     *
-     * @param script The literal javascript to execute.
-     * @param source The source of the script.  This can be anything except null.  It is what will show up if errors
-     *               occur.
-     * @param target the target of the script which is used to replace the string '%t' and is added in the global scope
-     *               as variable 'target'
-     */
-    public void executeScript(String script, String source, String target) {
-        executeScript(script, source, target, null);
-    }
-
-    /**
-     * Executes the given script string (literal javascript) with the specified target and messages the given executor
-     * if anything goes wrong.
-     *
-     * @param script The literal javascript to execute.
-     * @param source The source of the script.  This can be anything except null.  It is what will show up if errors
-     *               occur.
-     * @param target the target of the script which is used to replace the string '%t' and is added in the global scope
-     *               as variable 'target'
-     * @param executor the player to notify of errors.
-     */
-    public void executeScript(String script, String source, String target, Player executor) {
-        this.target = target;
-        runScript(script, source, executor);
-        this.target = null;
-        metaData.clear();
     }
 
     /**
@@ -602,57 +258,6 @@ public class Buscript {
         script.put("metaData", new HashMap<String, Object>(metaData));
         playerScripts.add(script);
         saveData();
-    }
-
-    void runScript(String script, String source, Player executor) {
-        setup();
-        try {
-            scriptEngine.eval(script);
-        } catch (ScriptException e) {
-            getPlugin().getLogger().warning("Error running script: " + e.getMessage());
-            if (executor != null) {
-                executor.sendMessage("Error running script: " + e.getMessage());
-            }
-        }
-    }
-
-    void runScript(File script, Player executor) {
-        setup();
-        try (Reader reader = new FileReader(script)){
-            scriptEngine.eval(reader);
-        } catch (ScriptException | IOException e) {
-            getPlugin().getLogger().warning("Error running script: " + e.getMessage());
-            if (executor != null) {
-                executor.sendMessage("Error running script: " + e.getMessage());
-            }
-        }
-    }
-
-    private void setup() {
-        if (delayedReplacements != null) {
-            for (Map<String, Object> replacement : delayedReplacements) {
-                Object var = replacement.get("var");
-                Object replace = replacement.get("replace");
-                if (var != null) {
-                    if (replace == null) {
-                        replace = NULL;
-                    }
-                    setScriptVariable(var.toString(), replace);
-                }
-            }
-        } else {
-            for (StringReplacer r : stringReplacers) {
-                String var = r.getGlobalVarName();
-                String replace = r.getReplacement();
-                if (var != null) {
-                    if (replace == null) {
-                        replace = NULL;
-                    }
-                    setScriptVariable(var, replace);
-                }
-            }
-        }
-        setScriptVariable("metaData", metaData);
     }
 
     /**
@@ -721,36 +326,5 @@ public class Buscript {
         EventExecutor eventExecutor = new DefaultEventExecutor(this, scriptFile.toString());
         RegisteredListener registeredListener = new RegisteredListener(listener, eventExecutor, priority, getPlugin(), false);
         handlerList.register(registeredListener);
-    }
-
-    void cacheScript(String fileName) {
-        File file = new File(fileName);
-        if (!file.exists()) {
-            try {
-                file.createNewFile();
-            } catch (IOException e) {
-                getPlugin().getLogger().warning(e.getMessage());
-                return;
-            }
-        }
-
-        scriptCache.put(fileName, FileTools.readFileAsString(file, plugin.getLogger()));
-    }
-
-    String getCachedScript(String fileName) {
-        String cached = scriptCache.get(fileName);
-        if (cached == null) {
-            cacheScript(fileName);
-            cached = scriptCache.get(fileName);
-        }
-        return cached != null ? cached : "";
-    }
-
-    /**
-     * Clears scripts that have been cached so that they may be reloaded from the disk.  Scripts are typically cached
-     * when set bound to an event.
-     */
-    public void clearScriptCache() {
-        scriptCache.clear();
     }
 }

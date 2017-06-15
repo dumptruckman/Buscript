@@ -54,10 +54,10 @@ public class BuscriptPlugin extends JavaPlugin {
                 player = (Player) sender;
             }
             if (args.length == 1) {
-                getAPI().executeScript(scriptFile, player);
+                getAPI().executeScript(scriptFile, new BukkitScriptExecutor(player));
                 return true;
             } else if (args.length == 2) {
-                getAPI().executeScript(scriptFile, args[1], player);
+                getAPI().executeScript(scriptFile, args[1], new BukkitScriptExecutor(player));
                 return true;
             }
         } else if (label.equalsIgnoreCase("breload")) {
