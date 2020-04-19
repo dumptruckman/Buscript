@@ -3,6 +3,7 @@ main: buscript.BuscriptPlugin
 version: maven-version-number
 author: dumptruckman
 softdepend: [Vault]
+api-version: 1.13
 
 commands:
   run:
