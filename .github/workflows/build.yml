@@ -56,10 +56,13 @@ jobs:
         with:
           name: javadoc
 
+      - name: Stage javadoc
+        run: mv target/apidocs javadoc
+
       - name: Publish javadoc
         uses: crazy-max/ghaction-github-pages@v2
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           target_branch: gh-pages
-          build_dir: target/apidocs
+          build_dir: javadoc
