@@ -55,9 +55,7 @@ jobs:
         uses: actions/download-artifact@v2
         with:
           name: javadoc
-
-      - name: Stage javadoc
-        run: mv target/apidocs javadoc
+          path: javadoc/
 
       - name: Publish javadoc
         uses: crazy-max/ghaction-github-pages@v2
