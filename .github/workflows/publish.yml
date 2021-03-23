@@ -1,6 +1,9 @@
 name: Java CI
 
-on: [push]
+on:
+  push:
+    branches:
+      - master
 
 jobs:
   build:
@@ -22,20 +25,16 @@ jobs:
           key: ${{ runner.os }}-m2-${{ hashFiles('**/pom.xml') }}
           restore-keys: ${{ runner.os }}-m2
 
-      - name: Build with Maven
-        run: mvn --batch-mode --update-snapshots verify
+      - name: Publish with Maven
+        run: mvn --batch-mode --update-snapshots deploy
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Upload artifact
-        uses: actions/upload-artifact@v2
+      - name: Publish javadoc
+        uses: crazy-max/ghaction-github-pages@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          name: artifact
-          path: target/*.jar
-
-      - name: Upload plugin
-        uses: actions/upload-artifact@v2
-        with:
-          name: plugin
-          path: |
-            target/*.jar
-            !target/*-javadoc.jar
-            !target/*-sources.jar
+          target_branch: gh-pages
+          build_dir: target/apidocs
+          jekyll: false
