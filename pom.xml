@@ -171,12 +171,14 @@ and adjust the build number accordingly -->
 
     <distributionManagement>
         <repository>
-            <id>OnARandomBox</id>
-            <url>http://repo.onarandombox.com/content/repositories/thirdparty/</url>
+            <id>github</id>
+            <name>GitHub Packages</name>
+            <url>https://maven.pkg.github.com/dumptruckman/buscript</url>
         </repository>
         <snapshotRepository>
-            <id>OnARandomBox</id>
-            <url>http://repo.onarandombox.com/content/repositories/thirdparty-dev/</url>
+            <id>github</id>
+            <name>GitHub Packages</name>
+            <url>https://maven.pkg.github.com/dumptruckman/buscript</url>
         </snapshotRepository>
     </distributionManagement>
 </project>
