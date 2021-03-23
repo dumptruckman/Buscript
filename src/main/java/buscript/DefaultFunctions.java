@@ -8,7 +8,7 @@ import org.bukkit.entity.Player;
 
 import java.io.File;
 
-class DefaultFunctions {
+public class DefaultFunctions {
 
     private Buscript buscript;
 

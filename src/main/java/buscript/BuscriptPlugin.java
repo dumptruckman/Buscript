@@ -54,7 +54,10 @@ public class BuscriptPlugin extends JavaPlugin {
                 player = (Player) sender;
             }
             if (args.length == 1) {
-                getAPI().executeScript(scriptFile, new BukkitScriptExecutor(player));
+                if(player != null)
+                    getAPI().executeScript(scriptFile, player.getPlayerListName(), new BukkitScriptExecutor(player));
+                else
+                    getAPI().executeScript(scriptFile, new BukkitScriptExecutor(player));
                 return true;
             } else if (args.length == 2) {
                 getAPI().executeScript(scriptFile, args[1], new BukkitScriptExecutor(player));
