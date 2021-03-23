@@ -80,6 +80,17 @@ and adjust the build number accordingly -->
                 <project.build.number>${env.BUILD_NUMBER}</project.build.number>
             </properties>
         </profile>
+        <profile>
+            <id>github-actions</id>
+            <activation>
+                <property>
+                    <name>env.GITHUB_RUN_NUMBER</name>
+                </property>
+            </activation>
+            <properties>
+                <project.build.number>${env.GITHUB_RUN_NUMBER}</project.build.number>
+            </properties>
+        </profile>
     </profiles>
 
     <build>
